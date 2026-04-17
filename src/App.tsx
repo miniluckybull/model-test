@@ -1,0 +1,23 @@
+import { useEffect } from 'react'
+import { useConfigStore } from './store/configStore'
+import Header from './components/Header'
+import ControlsGrid from './components/ControlsGrid'
+
+function App() {
+  const loadConfigs = useConfigStore((state) => state.loadConfigs)
+
+  useEffect(() => {
+    loadConfigs()
+  }, [loadConfigs])
+
+  return (
+    <div className="app">
+      <Header />
+      <main>
+        <ControlsGrid />
+      </main>
+    </div>
+  )
+}
+
+export default App
