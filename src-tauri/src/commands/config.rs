@@ -44,6 +44,7 @@ pub struct ConfigResponse {
     pub provider: String,
     pub endpoint: String,
     pub model: String,
+    pub api_key: String,
     pub status: String,
     pub last_latency: Option<u64>,
     pub last_tokens: Option<u64>,
@@ -60,6 +61,7 @@ pub fn get_all_configs() -> Result<Vec<ConfigResponse>, String> {
         provider: c.provider,
         endpoint: c.endpoint,
         model: c.model,
+        api_key: c.api_key,
         status: c.status,
         last_latency: c.last_latency,
         last_tokens: c.last_tokens,
@@ -106,9 +108,15 @@ pub fn update_api_config(update: UpdateConfig) -> Result<(), String> {
         if let Some(status) = update.status {
             config.status = status;
         }
-        config.last_latency = update.last_latency;
-        config.last_tokens = update.last_tokens;
-        config.last_tested_at = update.last_tested_at;
+        if let Some(last_latency) = update.last_latency {
+            config.last_latency = Some(last_latency);
+        }
+        if let Some(last_tokens) = update.last_tokens {
+            config.last_tokens = Some(last_tokens);
+        }
+        if let Some(last_tested_at) = update.last_tested_at {
+            config.last_tested_at = Some(last_tested_at);
+        }
         config.error_message = update.error_message;
     } else {
         return Err(format!("Config with id '{}' not found", update.id));

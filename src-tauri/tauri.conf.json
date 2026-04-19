@@ -19,7 +19,8 @@
         "resizable": true,
         "decorations": true,
         "center": true,
-        "focus": true
+        "focus": true,
+        "visible": true
       }
     ],
     "security": {

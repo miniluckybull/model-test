@@ -8,27 +8,6 @@ import {
   mapBackendConfig,
 } from '../services/tauriCommands';
 
-const API_KEYS_STORAGE = 'api_keys_cache';
-
-function getApiKey(id: string): string {
-  try {
-    const cache = JSON.parse(localStorage.getItem(API_KEYS_STORAGE) || '{}');
-    return cache[id] || '';
-  } catch {
-    return '';
-  }
-}
-
-function setApiKey(id: string, key: string): void {
-  try {
-    const cache = JSON.parse(localStorage.getItem(API_KEYS_STORAGE) || '{}');
-    cache[id] = key;
-    localStorage.setItem(API_KEYS_STORAGE, JSON.stringify(cache));
-  } catch {
-    // Ignore storage errors
-  }
-}
-
 export const useConfigStore = create<ConfigStore>((set, get) => ({
   configs: [],
 
@@ -40,8 +19,6 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       model: config.model,
       api_key: config.apiKey,
     });
-
-    setApiKey(id, config.apiKey);
 
     set((state) => ({
       configs: [
@@ -67,8 +44,6 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       model: sourceConfig.model,
       api_key: sourceConfig.apiKey,
     });
-
-    setApiKey(newId, sourceConfig.apiKey);
 
     set((state) => ({
       configs: [
@@ -96,7 +71,6 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     if (updates.model !== undefined) backendUpdate.model = updates.model;
     if (updates.apiKey !== undefined) {
       backendUpdate.api_key = updates.apiKey;
-      setApiKey(id, updates.apiKey);
     }
     if (updates.status !== undefined) backendUpdate.status = updates.status;
     if (updates.lastLatency !== undefined) backendUpdate.last_latency = updates.lastLatency;
@@ -149,13 +123,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
   loadConfigs: async () => {
     try {
       const backendConfigs = await getAllConfigs();
-      const configs = backendConfigs.map((backend) => {
-        const mapped = mapBackendConfig(backend);
-        return {
-          ...mapped,
-          apiKey: getApiKey(mapped.id),
-        };
-      });
+      const configs = backendConfigs.map(mapBackendConfig);
       set({ configs });
     } catch (error) {
       console.error('Failed to load configs:', error);

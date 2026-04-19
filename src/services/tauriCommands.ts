@@ -29,6 +29,7 @@ interface BackendConfig {
   provider: string;
   endpoint: string;
   model: string;
+  api_key: string;
   status: string;
   last_latency?: number;
   last_tokens?: number;
@@ -63,7 +64,7 @@ export function mapBackendConfig(backend: BackendConfig): ApiConfig {
     provider: backend.provider as ApiConfig['provider'],
     endpoint: backend.endpoint,
     model: backend.model,
-    apiKey: '',
+    apiKey: backend.api_key,
     status: backend.status as ApiConfig['status'],
     lastLatency: backend.last_latency,
     lastTokens: backend.last_tokens,

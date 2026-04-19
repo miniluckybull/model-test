@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useConfigStore } from './store/configStore'
+import { listen } from '@tauri-apps/api/event'
 import Header from './components/Header'
 import ControlsGrid from './components/ControlsGrid'
 
@@ -8,6 +9,13 @@ function App() {
 
   useEffect(() => {
     loadConfigs()
+
+    const setupListeners = async () => {
+      await listen('auto-test-complete', () => {
+        loadConfigs()
+      })
+    }
+    setupListeners()
   }, [loadConfigs])
 
   return (
