@@ -19,6 +19,11 @@ pub async fn send_test_request(config: &ApiConfig) -> Result<(u64, u64, String),
         "openai" | _ => build_openai_request(config),
     };
     
+    // Debug logging
+    eprintln!("[DEBUG] Testing config: id={}, name={}, provider={}", config.id, config.name, config.provider);
+    eprintln!("[DEBUG] URL: {}", url);
+    eprintln!("[DEBUG] Model: {}", config.model);
+    
     let response = client
         .post(&url)
         .headers(headers)
@@ -33,6 +38,7 @@ pub async fn send_test_request(config: &ApiConfig) -> Result<(u64, u64, String),
             .text()
             .await
             .unwrap_or_else(|_| "Unknown error".to_string());
+        eprintln!("[DEBUG] HTTP Error {}: {}", status.as_u16(), error_text);
         return Err(format!("HTTP {}: {}", status.as_u16(), error_text));
     }
     
@@ -47,7 +53,13 @@ pub async fn send_test_request(config: &ApiConfig) -> Result<(u64, u64, String),
 fn build_openai_request(config: &ApiConfig) -> (String, reqwest::header::HeaderMap, serde_json::Value) {
     use reqwest::header::{HeaderMap, AUTHORIZATION, CONTENT_TYPE};
     
-    let url = format!("{}/v1/chat/completions", config.endpoint.trim_end_matches('/'));
+    // Remove trailing slash and avoid duplicating /v1
+    let base = config.endpoint.trim_end_matches('/');
+    let url = if base.ends_with("/v1") {
+        format!("{}/chat/completions", base)
+    } else {
+        format!("{}/v1/chat/completions", base)
+    };
     
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -59,7 +71,8 @@ fn build_openai_request(config: &ApiConfig) -> (String, reqwest::header::HeaderM
     let body = json!({
         "model": config.model,
         "messages": [{"role": "user", "content": "Hello"}],
-        "max_tokens": 100
+        "max_tokens": 100,
+        "stream": false
     });
     
     (url, headers, body)

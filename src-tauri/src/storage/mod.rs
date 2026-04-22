@@ -37,6 +37,19 @@ fn get_configs() -> Result<Vec<ApiConfig>, String> {
 fn save_configs(configs: &[ApiConfig]) -> Result<(), String> {
     let mut global = CONFIGS.lock().map_err(|e| e.to_string())?;
     *global = Some(configs.to_vec());
+    
+    // Write to disk
+    let config_dir = dirs::config_dir()
+        .ok_or_else(|| "Cannot find config directory".to_string())?;
+    let app_dir = config_dir.join("com.local.model-test");
+    let path = app_dir.join("configs.json");
+    
+    let json = serde_json::to_string_pretty(configs)
+        .map_err(|e| format!("Cannot serialize configs: {}", e))?;
+    
+    std::fs::write(&path, json)
+        .map_err(|e| format!("Cannot write configs file: {}", e))?;
+    
     Ok(())
 }
 
