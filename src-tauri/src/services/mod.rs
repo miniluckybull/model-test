@@ -53,11 +53,21 @@ pub async fn send_test_request(config: &ApiConfig) -> Result<(u64, u64, String),
 fn build_openai_request(config: &ApiConfig) -> (String, reqwest::header::HeaderMap, serde_json::Value) {
     use reqwest::header::{HeaderMap, AUTHORIZATION, CONTENT_TYPE};
     
-    // Remove trailing slash and avoid duplicating /v1
+    // Remove trailing slash
     let base = config.endpoint.trim_end_matches('/');
-    let url = if base.ends_with("/v1") {
+    
+    // Build URL intelligently based on what the endpoint already contains
+    let url = if base.ends_with("/chat/completions") {
+        // Endpoint already has the full path
+        base.to_string()
+    } else if base.ends_with("/v1") {
+        // Endpoint ends with /v1, append chat/completions
+        format!("{}/chat/completions", base)
+    } else if base.contains("/v1") {
+        // Endpoint contains /v1 somewhere (e.g., /compatible-mode/v1)
         format!("{}/chat/completions", base)
     } else {
+        // Endpoint is just a base URL, append /v1/chat/completions
         format!("{}/v1/chat/completions", base)
     };
     

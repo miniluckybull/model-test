@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClaudeConfig {
     #[serde(default)]
     pub env: HashMap<String, String>,
@@ -11,27 +11,94 @@ pub struct ClaudeConfig {
     pub model: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClaudeConfigRequest {
     pub api_key: String,
+    pub auth_token: String,
     pub base_url: Option<String>,
     pub model: Option<String>,
+    pub custom_config_path: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConfigComparison {
     pub current_config: ClaudeConfig,
-    pub new_config: ClaudeConfigRequest,
+    pub new_config_json: String,
     pub config_path: String,
+    pub current_config_json: String,
+    pub detected_paths: Vec<String>,
 }
 
-fn get_claude_config_path() -> Result<PathBuf, String> {
+/// Get all possible Claude config paths in priority order
+fn get_all_claude_config_paths() -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    
+    // Primary: Claude Code official user-level config (recommended)
+    if let Some(home) = dirs::home_dir() {
+        paths.push(home.join(".claude").join("settings.json"));
+    }
+    
+    // Secondary: Project-level configs
+    if let Ok(current_dir) = std::env::current_dir() {
+        let project_claude_dir = current_dir.join(".claude");
+        if project_claude_dir.exists() {
+            paths.push(project_claude_dir.join("settings.json"));
+            paths.push(project_claude_dir.join("settings.local.json"));
+        }
+    }
+    
+    // Fallback: Alternative user-level paths
+    if let Some(home) = dirs::home_dir() {
+        // Old format or alternative location
+        paths.push(home.join(".claude.json"));
+    }
+    
+    // Platform-specific managed configs
+    #[cfg(target_os = "macos")]
+    {
+        paths.push(PathBuf::from("/Library/Application Support/ClaudeCode/managed-settings.json"));
+    }
+    
+    #[cfg(target_os = "linux")]
+    {
+        paths.push(PathBuf::from("/etc/claude-code/managed-settings.json"));
+    }
+    
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(program_files) = std::env::var_os("ProgramFiles") {
+            paths.push(PathBuf::from(program_files).join("ClaudeCode").join("managed-settings.json"));
+        }
+    }
+    
+    paths
+}
+
+/// Find the first existing config file
+fn find_existing_config_path() -> Option<PathBuf> {
+    get_all_claude_config_paths()
+        .into_iter()
+        .find(|p| p.exists())
+}
+
+/// Get the best config path (existing or default)
+fn get_claude_config_path(custom_path: Option<&str>) -> Result<PathBuf, String> {
+    if let Some(path) = custom_path {
+        if !path.is_empty() {
+            return Ok(PathBuf::from(path));
+        }
+    }
+    
+    if let Some(existing) = find_existing_config_path() {
+        return Ok(existing);
+    }
+    
     let home = dirs::home_dir().ok_or("Cannot find home directory")?;
     Ok(home.join(".claude").join("settings.json"))
 }
 
-fn read_claude_config() -> Result<ClaudeConfig, String> {
-    let path = get_claude_config_path()?;
+fn read_claude_config(custom_path: Option<&str>) -> Result<ClaudeConfig, String> {
+    let path = get_claude_config_path(custom_path)?;
     
     if !path.exists() {
         return Ok(ClaudeConfig {
@@ -49,16 +116,14 @@ fn read_claude_config() -> Result<ClaudeConfig, String> {
     Ok(config)
 }
 
-fn write_claude_config(config: &ClaudeConfig) -> Result<String, String> {
-    let path = get_claude_config_path()?;
+fn write_claude_config(config: &ClaudeConfig, custom_path: Option<&str>) -> Result<String, String> {
+    let path = get_claude_config_path(custom_path)?;
     
-    // Create directory if it doesn't exist
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .map_err(|e| format!("Failed to create config directory: {}", e))?;
     }
 
-    // Create backup before writing
     if path.exists() {
         let backup_path = path.with_extension(format!("json.backup.{}", 
             chrono::Utc::now().format("%Y%m%d_%H%M%S")));
@@ -66,7 +131,6 @@ fn write_claude_config(config: &ClaudeConfig) -> Result<String, String> {
             .map_err(|e| format!("Failed to create backup: {}", e))?;
     }
 
-    // Write new config
     let json = serde_json::to_string_pretty(config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
     
@@ -77,39 +141,105 @@ fn write_claude_config(config: &ClaudeConfig) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn get_claude_config() -> Result<ConfigComparison, String> {
-    let current_config = read_claude_config()?;
-    let config_path = get_claude_config_path()?.to_string_lossy().to_string();
+pub fn get_claude_config(custom_config_path: Option<String>) -> Result<ConfigComparison, String> {
+    let path_ref = custom_config_path.as_deref().filter(|s| !s.is_empty());
+    let current_config = read_claude_config(path_ref)?;
+    let config_path = get_claude_config_path(path_ref)?.to_string_lossy().to_string();
+    
+    let current_config_json = serde_json::to_string_pretty(&current_config)
+        .unwrap_or_default();
+    
+    let detected_paths: Vec<String> = get_all_claude_config_paths()
+        .into_iter()
+        .map(|p| {
+            let path_str = p.to_string_lossy().to_string();
+            if p.exists() {
+                format!("{} (exists)", path_str)
+            } else {
+                path_str
+            }
+        })
+        .collect();
 
     Ok(ConfigComparison {
         current_config,
-        new_config: ClaudeConfigRequest {
-            api_key: String::new(),
-            base_url: None,
-            model: None,
-        },
+        new_config_json: serde_json::json!({
+            "ANTHROPIC_API_KEY": "",
+            "ANTHROPIC_AUTH_TOKEN": "",
+        }).to_string(),
         config_path,
+        current_config_json,
+        detected_paths,
     })
 }
 
 #[tauri::command]
 pub fn preview_claude_config(request: ClaudeConfigRequest) -> Result<ConfigComparison, String> {
-    let current_config = read_claude_config()?;
-    let config_path = get_claude_config_path()?.to_string_lossy().to_string();
+    let path_ref = request.custom_config_path.as_deref().filter(|s| !s.is_empty());
+    let current_config = read_claude_config(path_ref)?;
+    let config_path = get_claude_config_path(path_ref)?.to_string_lossy().to_string();
+    
+    let current_config_json = serde_json::to_string_pretty(&current_config)
+        .unwrap_or_default();
+    
+    let detected_paths: Vec<String> = get_all_claude_config_paths()
+        .into_iter()
+        .map(|p| {
+            let path_str = p.to_string_lossy().to_string();
+            if p.exists() {
+                format!("{} (exists)", path_str)
+            } else {
+                path_str
+            }
+        })
+        .collect();
+
+    // Build the new config in the same structure as settings.json
+    let mut env = serde_json::Map::new();
+    
+    env.insert("ANTHROPIC_API_KEY".to_string(), serde_json::Value::String(request.api_key.clone()));
+    env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), serde_json::Value::String(request.auth_token.clone()));
+    
+    if let Some(base_url) = &request.base_url {
+        if !base_url.is_empty() {
+            env.insert("ANTHROPIC_BASE_URL".to_string(), serde_json::Value::String(base_url.clone()));
+        }
+    }
+    
+    if let Some(model) = &request.model {
+        if !model.is_empty() {
+            env.insert("ANTHROPIC_MODEL".to_string(), serde_json::Value::String(model.clone()));
+        }
+    }
+
+    let mut new_config = serde_json::Map::new();
+    new_config.insert("env".to_string(), serde_json::Value::Object(env));
+    
+    if let Some(model) = &request.model {
+        if !model.is_empty() {
+            new_config.insert("model".to_string(), serde_json::Value::String(model.clone()));
+        }
+    }
+
+    let new_config_json = serde_json::to_string_pretty(&new_config)
+        .unwrap_or_default();
 
     Ok(ConfigComparison {
         current_config,
-        new_config: request,
+        new_config_json,
         config_path,
+        current_config_json,
+        detected_paths,
     })
 }
 
 #[tauri::command]
 pub fn apply_claude_config(request: ClaudeConfigRequest) -> Result<String, String> {
-    let mut config = read_claude_config()?;
+    let path_ref = request.custom_config_path.as_deref().filter(|s| !s.is_empty());
+    let mut config = read_claude_config(path_ref)?;
 
-    // Update environment variables
     config.env.insert("ANTHROPIC_API_KEY".to_string(), request.api_key);
+    config.env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), request.auth_token);
     
     if let Some(base_url) = request.base_url {
         if !base_url.is_empty() {
@@ -119,22 +249,60 @@ pub fn apply_claude_config(request: ClaudeConfigRequest) -> Result<String, Strin
         }
     }
 
-    // Update model
     if let Some(model) = request.model {
         if !model.is_empty() {
+            // Set both env.ANTHROPIC_MODEL and model for Claude Code compatibility
+            config.env.insert("ANTHROPIC_MODEL".to_string(), model.clone());
             config.model = Some(model);
         } else {
+            config.env.remove("ANTHROPIC_MODEL");
             config.model = None;
         }
     }
 
-    let config_path = write_claude_config(&config)?;
+    let config_path = write_claude_config(&config, path_ref)?;
 
     Ok(config_path)
 }
 
 #[tauri::command]
-pub fn get_claude_config_path_command() -> Result<String, String> {
-    let path = get_claude_config_path()?;
+pub fn get_claude_config_path_command(custom_config_path: Option<String>) -> Result<String, String> {
+    let path_ref = custom_config_path.as_deref().filter(|s| !s.is_empty());
+    let path = get_claude_config_path(path_ref)?;
     Ok(path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub fn apply_custom_claude_config(config_json: String, custom_config_path: Option<String>) -> Result<String, String> {
+    let path_ref = custom_config_path.as_deref().filter(|s| !s.is_empty());
+    let mut config = read_claude_config(path_ref)?;
+    
+    let custom_config: serde_json::Value = serde_json::from_str(&config_json)
+        .map_err(|e| format!("Failed to parse config JSON: {}", e))?;
+    
+    if let Some(env) = custom_config.get("env").and_then(|v| v.as_object()) {
+        for (key, value) in env {
+            if let Some(val_str) = value.as_str() {
+                config.env.insert(key.clone(), val_str.to_string());
+            }
+        }
+    }
+    
+    if let Some(obj) = custom_config.as_object() {
+        for (key, value) in obj {
+            if key != "env" && key != "model" {
+                if let Some(val_str) = value.as_str() {
+                    config.env.insert(key.clone(), val_str.to_string());
+                }
+            }
+        }
+    }
+    
+    if let Some(model) = custom_config.get("model").and_then(|v| v.as_str()) {
+        config.model = Some(model.to_string());
+    }
+
+    let config_path = write_claude_config(&config, path_ref)?;
+
+    Ok(config_path)
 }

@@ -30,14 +30,18 @@ export interface ClaudeConfig {
 
 export interface ClaudeConfigRequest {
   api_key: string;
+  auth_token: string;
   base_url?: string;
   model?: string;
+  custom_config_path?: string;
 }
 
 export interface ConfigComparison {
   current_config: ClaudeConfig;
-  new_config: ClaudeConfigRequest;
+  new_config_json: string;
   config_path: string;
+  current_config_json: string;
+  detected_paths: string[];
 }
 
 export interface ConfigStore {

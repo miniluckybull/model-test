@@ -892,12 +892,12 @@ select.field-input {
 
 /* Claude Code Dialog Styles */
 .btn-claude {
-  background: var(--blue);
+  background: var(--amber);
   color: #0a0c0f;
 }
 
 .btn-claude:hover:not(:disabled) {
-  background: #6dd5ff;
+  background: #ffb733;
 }
 
 .dialog-overlay {
@@ -965,6 +965,132 @@ select.field-input {
   padding: 24px;
 }
 
+/* Custom Config Path Section */
+.config-path-section {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.config-path-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.config-path-label input[type="checkbox"] {
+  accent-color: var(--amber);
+}
+
+.config-path-input {
+  width: 100%;
+  margin-top: 4px;
+}
+
+.detected-paths {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.detected-paths-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.detected-paths-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detected-paths-hint {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.detected-paths-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.detected-path-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  padding: 6px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.detected-path-btn:hover {
+  border-color: var(--amber);
+  color: var(--text-primary);
+}
+
+.detected-path-btn.exists {
+  border-color: var(--green);
+  color: var(--green);
+  background: var(--green-dim);
+}
+
+.detected-path-btn.exists:hover {
+  background: var(--green-dim);
+  border-color: var(--green);
+}
+
+.detected-path-btn.recommended {
+  border-color: var(--amber);
+  border-width: 2px;
+}
+
+.path-indicator {
+  flex-shrink: 0;
+  width: 12px;
+  font-weight: bold;
+}
+
+.path-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.path-badge {
+  flex-shrink: 0;
+  padding: 1px 4px;
+  background: var(--amber);
+  color: #0a0c0f;
+  font-size: 8px;
+  font-weight: 600;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
 .config-section {
   margin-bottom: 16px;
 }
@@ -976,6 +1102,18 @@ select.field-input {
   letter-spacing: 0.5px;
   color: var(--text-secondary);
   margin-bottom: 8px;
+}
+
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.btn-edit-config {
+  padding: 4px 8px;
+  font-size: 10px;
 }
 
 .config-block {
@@ -998,6 +1136,25 @@ select.field-input {
   line-height: 1.6;
   color: var(--text-primary);
   white-space: pre;
+}
+
+.config-json-editor {
+  width: 100%;
+  min-height: 150px;
+  padding: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  resize: vertical;
+}
+
+.config-json-editor:focus {
+  outline: none;
+  border-color: var(--amber);
 }
 
 .config-arrow {

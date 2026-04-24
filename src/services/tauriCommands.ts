@@ -58,8 +58,8 @@ export async function testModel(configId: string): Promise<void> {
 }
 
 // Claude Code configuration commands
-export async function getClaudeConfig(): Promise<ConfigComparison> {
-  return invoke<ConfigComparison>('get_claude_config');
+export async function getClaudeConfig(customConfigPath?: string): Promise<ConfigComparison> {
+  return invoke<ConfigComparison>('get_claude_config', { customConfigPath });
 }
 
 export async function previewClaudeConfig(request: ClaudeConfigRequest): Promise<ConfigComparison> {
@@ -70,8 +70,12 @@ export async function applyClaudeConfig(request: ClaudeConfigRequest): Promise<s
   return invoke<string>('apply_claude_config', { request });
 }
 
-export async function getClaudeConfigPath(): Promise<string> {
-  return invoke<string>('get_claude_config_path_command');
+export async function getClaudeConfigPath(customConfigPath?: string): Promise<string> {
+  return invoke<string>('get_claude_config_path_command', { customConfigPath });
+}
+
+export async function applyCustomClaudeConfig(configJson: string, customConfigPath?: string): Promise<string> {
+  return invoke<string>('apply_custom_claude_config', { configJson, customConfigPath });
 }
 
 export function mapBackendConfig(backend: BackendConfig): ApiConfig {
