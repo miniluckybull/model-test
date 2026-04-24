@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { ApiConfig } from '../types';
+import { ApiConfig, ClaudeConfigRequest, ConfigComparison } from '../types';
 
 interface CreateConfigPayload {
   name: string;
@@ -55,6 +55,23 @@ export async function deleteApiConfig(id: string): Promise<void> {
 
 export async function testModel(configId: string): Promise<void> {
   return invoke('test_model', { configId });
+}
+
+// Claude Code configuration commands
+export async function getClaudeConfig(): Promise<ConfigComparison> {
+  return invoke<ConfigComparison>('get_claude_config');
+}
+
+export async function previewClaudeConfig(request: ClaudeConfigRequest): Promise<ConfigComparison> {
+  return invoke<ConfigComparison>('preview_claude_config', { request });
+}
+
+export async function applyClaudeConfig(request: ClaudeConfigRequest): Promise<string> {
+  return invoke<string>('apply_claude_config', { request });
+}
+
+export async function getClaudeConfigPath(): Promise<string> {
+  return invoke<string>('get_claude_config_path_command');
 }
 
 export function mapBackendConfig(backend: BackendConfig): ApiConfig {

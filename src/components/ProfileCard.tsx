@@ -4,7 +4,7 @@ import { useConfigStore } from '../store/configStore'
 import { testModel } from '../services/tauriCommands'
 import { PROVIDERS, STATUS_COLORS } from '../utils/constants'
 import Tag from './Tag'
-import ResultPanel from './ResultPanel'
+import ClaudeConfigDialog from './ClaudeConfigDialog'
 import { listen } from '@tauri-apps/api/event'
 
 interface ProfileCardProps {
@@ -25,6 +25,8 @@ function ProfileCard({ config }: ProfileCardProps) {
   const [editModel, setEditModel] = useState(config.model)
   const [editApiKey, setEditApiKey] = useState(config.apiKey)
   const [lastResult, setLastResult] = useState<TestResult | null>(null)
+  const [showClaudeDialog, setShowClaudeDialog] = useState(false)
+  const [resultExpanded, setResultExpanded] = useState(false)
 
   useEffect(() => {
     let unlisten: (() => void) | undefined
@@ -60,6 +62,7 @@ function ProfileCard({ config }: ProfileCardProps) {
   const handleTest = async () => {
     setConfigStatus(config.id, 'running')
     setLastResult(null)
+    setResultExpanded(false)
 
     if (isEditing) {
       await updateConfig(config.id, {
@@ -114,7 +117,7 @@ function ProfileCard({ config }: ProfileCardProps) {
       {!isEditing ? (
         <>
           <div className="card-header">
-            <div>
+            <div className="card-header-left">
               <h3 className="card-name">{config.name}</h3>
               <p className="card-description">{PROVIDERS[config.provider]?.name || 'Custom'} • {config.model}</p>
             </div>
@@ -126,7 +129,7 @@ function ProfileCard({ config }: ProfileCardProps) {
           <div className="card-meta">
             <div className="meta-row">
               <span className="meta-label">Endpoint</span>
-              <span className="meta-value">{config.endpoint}</span>
+              <span className="meta-value truncate">{config.endpoint}</span>
             </div>
             <div className="meta-row">
               <span className="meta-label">Model</span>
@@ -156,43 +159,122 @@ function ProfileCard({ config }: ProfileCardProps) {
           )}
 
           {lastResult && (
-            <ResultPanel
-              success={lastResult.success}
-              latencyMs={lastResult.latencyMs}
-              tokens={lastResult.totalTokens}
-              response={lastResult.modelResponse}
-              error={lastResult.errorMessage}
-            />
+            <div className={`result-panel-compact ${resultExpanded ? 'expanded' : ''}`}>
+              <button 
+                className="result-toggle" 
+                onClick={() => setResultExpanded(!resultExpanded)}
+                aria-label="Toggle result details"
+              >
+                <span className="result-summary">
+                  {lastResult.success ? (
+                    <>
+                      <span className="result-status success">✓</span>
+                      <span className="result-stats-inline">
+                        {lastResult.latencyMs}ms • {lastResult.totalTokens} tokens
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="result-status error">✕</span>
+                      <span className="result-error-brief">{lastResult.errorMessage?.substring(0, 50)}...</span>
+                    </>
+                  )}
+                </span>
+                <svg 
+                  className={`chevron ${resultExpanded ? 'rotated' : ''}`} 
+                  width="12" 
+                  height="12" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2"
+                >
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              
+              {resultExpanded && (
+                <div className="result-details">
+                  {lastResult.success ? (
+                    <pre className="result-response">{lastResult.modelResponse}</pre>
+                  ) : (
+                    <div className="result-error-full">{lastResult.errorMessage}</div>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           <div className="card-footer">
             <button
-              className="btn btn-primary"
+              className="btn-icon btn-test"
               onClick={handleTest}
               disabled={config.status === 'running'}
+              title={config.status === 'running' ? 'Testing...' : 'Test'}
             >
-              {config.status === 'running' ? 'Testing...' : 'Test'}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
             </button>
-            <button className="btn btn-secondary" onClick={() => {
-              setEditName(config.name)
-              setEditProvider(config.provider)
-              setEditEndpoint(config.endpoint)
-              setEditModel(config.model)
-              setEditApiKey(config.apiKey)
-              setIsEditing(true)
-            }}>
-              Edit
+            
+            <button 
+              className="btn-icon btn-edit" 
+              onClick={() => {
+                setEditName(config.name)
+                setEditProvider(config.provider)
+                setEditEndpoint(config.endpoint)
+                setEditModel(config.model)
+                setEditApiKey(config.apiKey)
+                setIsEditing(true)
+              }}
+              title="Edit"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
             </button>
-            <button className="btn btn-secondary" onClick={() => duplicateConfig(config.id)} title="Duplicate">
-              Duplicate
+            
+            <button 
+              className="btn-icon btn-duplicate" 
+              onClick={() => duplicateConfig(config.id)} 
+              title="Duplicate"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
             </button>
-            <button className="btn btn-secondary btn-delete" onClick={handleDelete} title="Delete">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            
+            {config.status === 'ok' && (
+              <button 
+                className="btn-icon btn-claude" 
+                onClick={() => setShowClaudeDialog(true)}
+                title="Apply to Claude Code"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+              </button>
+            )}
+            
+            <button 
+              className="btn-icon btn-delete" 
+              onClick={handleDelete} 
+              title="Delete"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
             </button>
           </div>
+
+          <ClaudeConfigDialog
+            isOpen={showClaudeDialog}
+            onClose={() => setShowClaudeDialog(false)}
+            config={config}
+          />
         </>
       ) : (
         <>

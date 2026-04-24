@@ -23,6 +23,23 @@ export interface TestResult {
   modelResponse?: string;
 }
 
+export interface ClaudeConfig {
+  env: Record<string, string>;
+  model?: string;
+}
+
+export interface ClaudeConfigRequest {
+  api_key: string;
+  base_url?: string;
+  model?: string;
+}
+
+export interface ConfigComparison {
+  current_config: ClaudeConfig;
+  new_config: ClaudeConfigRequest;
+  config_path: string;
+}
+
 export interface ConfigStore {
   configs: ApiConfig[];
   addConfig: (config: Omit<ApiConfig, 'id' | 'status'>) => Promise<void>;
