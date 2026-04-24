@@ -150,6 +150,10 @@ pub fn run() {
             commands::config::update_api_config,
             commands::config::delete_api_config,
             commands::test::test_model,
+            commands::claude::get_claude_config,
+            commands::claude::preview_claude_config,
+            commands::claude::apply_claude_config,
+            commands::claude::get_claude_config_path_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
