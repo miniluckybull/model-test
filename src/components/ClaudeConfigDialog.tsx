@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ApiConfig, ConfigComparison } from '../types'
-import { previewClaudeConfig, applyClaudeConfig } from '../services/tauriCommands'
+import { previewClaudeConfig, applyClaudeConfig, applyCustomClaudeConfig } from '../services/tauriCommands'
 
 interface ClaudeConfigDialogProps {
   isOpen: boolean
@@ -13,14 +13,14 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [customConfigPath, setCustomConfigPath] = useState('')
+  const [useCustomPath, setUseCustomPath] = useState(false)
+  const [editableConfig, setEditableConfig] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
 
-  useEffect(() => {
-    if (isOpen && config) {
-      loadComparison()
-    }
-  }, [isOpen, config])
+  const activeConfigPath = useCustomPath && customConfigPath ? customConfigPath : undefined
 
-  const loadComparison = async () => {
+  const loadComparison = useCallback(async () => {
     if (!config) return
     
     setLoading(true)
@@ -29,18 +29,32 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
     try {
       const request = {
         api_key: config.apiKey,
+        auth_token: config.apiKey,
         base_url: config.endpoint,
         model: config.model,
+        custom_config_path: activeConfigPath,
       }
       
       const result = await previewClaudeConfig(request)
       setComparison(result)
+      setEditableConfig(result.new_config_json)
+      setIsEditing(false)
+      
+      if (!useCustomPath && result.config_path) {
+        setCustomConfigPath(result.config_path)
+      }
     } catch (err: any) {
       setError(err.toString())
     } finally {
       setLoading(false)
     }
-  }
+  }, [config, activeConfigPath, useCustomPath])
+
+  useEffect(() => {
+    if (isOpen && config) {
+      loadComparison()
+    }
+  }, [isOpen, config, loadComparison])
 
   const handleApply = async () => {
     if (!config) return
@@ -49,16 +63,21 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
     setError(null)
     
     try {
-      const request = {
-        api_key: config.apiKey,
-        base_url: config.endpoint,
-        model: config.model,
+      if (isEditing) {
+        await applyCustomClaudeConfig(editableConfig, activeConfigPath)
+      } else {
+        const request = {
+          api_key: config.apiKey,
+          auth_token: config.apiKey,
+          base_url: config.endpoint,
+          model: config.model,
+          custom_config_path: activeConfigPath,
+        }
+        await applyClaudeConfig(request)
       }
       
-      await applyClaudeConfig(request)
       setSuccess(true)
       
-      // Show success for 2 seconds then close
       setTimeout(() => {
         onClose()
         setSuccess(false)
@@ -70,9 +89,27 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
     }
   }
 
-  const maskApiKey = (key: string): string => {
-    if (!key || key.length < 10) return '***'
-    return key.substring(0, 6) + '***' + key.substring(key.length - 4)
+  const handleConfigPathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomConfigPath(e.target.value)
+  }
+
+  const handleToggleCustomPath = () => {
+    setUseCustomPath(!useCustomPath)
+    if (!useCustomPath && comparison && comparison.config_path) {
+      setCustomConfigPath(comparison.config_path)
+    }
+  }
+
+  const handleSelectDetectedPath = (path: string) => {
+    setCustomConfigPath(path.replace(' (exists)', ''))
+    setUseCustomPath(true)
+  }
+
+  const handleToggleEdit = () => {
+    if (!isEditing && comparison) {
+      setEditableConfig(comparison.new_config_json)
+    }
+    setIsEditing(!isEditing)
   }
 
   if (!isOpen || !config) return null
@@ -82,10 +119,61 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
       <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <h2 className="dialog-title">Apply to Claude Code</h2>
-          <button className="dialog-close" onClick={onClose}>×</button>
+          <button className="dialog-close" onClick={onClose}>x</button>
         </div>
 
         <div className="dialog-body">
+          <div className="config-path-section">
+            <label className="config-path-label">
+              <input 
+                type="checkbox" 
+                checked={useCustomPath} 
+                onChange={handleToggleCustomPath}
+              />
+              Custom Config Path
+            </label>
+            {useCustomPath && (
+              <input
+                type="text"
+                className="field-input config-path-input"
+                value={customConfigPath}
+                onChange={handleConfigPathChange}
+                placeholder="~/.claude/settings.json"
+              />
+            )}
+            
+            {comparison && comparison.detected_paths.length > 0 && (
+              <div className="detected-paths">
+                <div className="detected-paths-header">
+                  <span className="detected-paths-label">Detected paths:</span>
+                  <span className="detected-paths-hint">Click to select a path · Green = exists</span>
+                </div>
+                <div className="detected-paths-list">
+                  {comparison.detected_paths.map((path, idx) => {
+                    const isExists = path.includes('(exists)')
+                    const cleanPath = path.replace(' (exists)', '')
+                    const isRecommended = idx === 0 && cleanPath.includes('.claude/settings.json')
+                    
+                    return (
+                      <button
+                        key={idx}
+                        className={`detected-path-btn ${isExists ? 'exists' : ''} ${isRecommended ? 'recommended' : ''}`}
+                        onClick={() => handleSelectDetectedPath(path)}
+                        title={isRecommended ? 'Recommended: Claude Code official config' : ''}
+                      >
+                        <span className="path-indicator">
+                          {isExists ? '✓' : '○'}
+                        </span>
+                        <span className="path-text">{cleanPath}</span>
+                        {isRecommended && <span className="path-badge">Recommended</span>}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
           {loading && !comparison && (
             <div className="loading-state">
               <div className="spinner"></div>
@@ -104,7 +192,7 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
 
           {success && (
             <div className="success-state">
-              <div className="success-icon">✓</div>
+              <div className="success-icon">OK</div>
               <p>Configuration applied successfully!</p>
               <p className="success-detail">Claude Code will use the new configuration on next launch.</p>
             </div>
@@ -115,33 +203,36 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
               <div className="config-section">
                 <h3 className="section-title">Current Claude Code Config</h3>
                 <div className="config-block">
-                  <pre className="config-json">
-                    {JSON.stringify({
-                      env: Object.fromEntries(
-                        Object.entries(comparison.current_config.env || {}).map(([key, value]) => [
-                          key,
-                          key.includes('KEY') || key.includes('TOKEN') ? maskApiKey(value) : value
-                        ])
-                      ),
-                      model: comparison.current_config.model || '(not set)'
-                    }, null, 2)}
-                  </pre>
+                  <pre className="config-json">{comparison.current_config_json || '{}'}</pre>
                 </div>
               </div>
 
-              <div className="config-arrow">↓ Will be changed to ↓</div>
+              <div className="config-arrow">Will be changed to</div>
 
               <div className="config-section">
-                <h3 className="section-title">New Config from Model Tester</h3>
-                <div className="config-block highlight">
-                  <pre className="config-json">
-                    {JSON.stringify({
-                      ANTHROPIC_API_KEY: maskApiKey(config.apiKey),
-                      ...(config.endpoint ? { ANTHROPIC_BASE_URL: config.endpoint } : {}),
-                      ...(config.model ? { ANTHROPIC_MODEL: config.model } : {}),
-                    }, null, 2)}
-                  </pre>
+                <div className="section-title-row">
+                  <h3 className="section-title">New Config (Editable)</h3>
+                  <button 
+                    className="btn-icon btn-edit-config"
+                    onClick={handleToggleEdit}
+                    title={isEditing ? 'Preview' : 'Edit'}
+                  >
+                    {isEditing ? 'OK' : 'Edit'}
+                  </button>
                 </div>
+                
+                {isEditing ? (
+                  <textarea
+                    className="config-json-editor"
+                    value={editableConfig}
+                    onChange={(e) => setEditableConfig(e.target.value)}
+                    spellCheck={false}
+                  />
+                ) : (
+                  <div className="config-block highlight">
+                    <pre className="config-json">{editableConfig}</pre>
+                  </div>
+                )}
               </div>
 
               <div className="config-info">
