@@ -525,14 +525,31 @@ select.field-input {
   min-width: 24px;
 }
 
-.btn-delete {
-  padding: 6px 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-secondary);
+.btn-test:hover:not(:disabled) {
+  color: var(--green);
+  border-color: var(--green);
+  background: var(--green-dim);
 }
 
-.btn-delete:hover {
+.btn-edit:hover:not(:disabled) {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-dim);
+}
+
+.btn-duplicate:hover:not(:disabled) {
+  color: var(--blue);
+  border-color: var(--blue);
+  background: var(--blue-dim);
+}
+
+.btn-claude:hover:not(:disabled) {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: var(--amber-dim);
+}
+
+.btn-delete:hover:not(:disabled) {
   color: var(--red);
   border-color: var(--red);
   background: var(--red-dim);
