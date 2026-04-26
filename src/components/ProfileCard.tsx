@@ -27,6 +27,9 @@ function ProfileCard({ config }: ProfileCardProps) {
   const [lastResult, setLastResult] = useState<TestResult | null>(null)
   const [showClaudeDialog, setShowClaudeDialog] = useState(false)
   const [resultExpanded, setResultExpanded] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     let unlisten: (() => void) | undefined
@@ -105,56 +108,61 @@ function ProfileCard({ config }: ProfileCardProps) {
   }
 
   const handleDelete = async () => {
-    if (confirm(`Delete "${config.name}"?`)) {
+    setIsDeleting(true)
+    setDeleteError(null)
+
+    try {
       await deleteConfig(config.id)
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : String(error))
+      setIsDeleting(false)
     }
   }
 
   const statusColor = STATUS_COLORS[config.status]
+  const providerName = PROVIDERS[config.provider]?.name || 'Custom'
+  const lastTestedTime = config.lastTestedAt
+    ? new Date(config.lastTestedAt).toLocaleTimeString()
+    : 'Never'
+  const hasTestStats = config.lastLatency !== undefined || config.lastTokens !== undefined || config.lastTestedAt
 
   return (
     <div className={`profile-card status-${config.status}`}>
       {!isEditing ? (
         <>
-          <div className="card-header">
-            <div className="card-header-left">
-              <h3 className="card-name">{config.name}</h3>
-              <p className="card-description">{PROVIDERS[config.provider]?.name || 'Custom'} • {config.model}</p>
+          <div className="config-overview" title={config.endpoint}>
+            <div className="use-preview">
+              <div className="preview-header">
+                <span className="meta-label">Use</span>
+                <Tag color={statusColor}>{config.status}</Tag>
+              </div>
+              <span className="use-value" title={config.name}>{config.name}</span>
             </div>
-            <div className="card-actions">
-              <Tag color={statusColor}>{config.status}</Tag>
-            </div>
-          </div>
-
-          <div className="card-meta">
-            <div className="meta-row">
-              <span className="meta-label">Endpoint</span>
-              <span className="meta-value truncate">{config.endpoint}</span>
-            </div>
-            <div className="meta-row">
-              <span className="meta-label">Model</span>
-              <span className="meta-value">{config.model}</span>
+            <div className="model-preview">
+              <div className="preview-header">
+                <span className="meta-label">Model</span>
+                <span className="provider-chip">{providerName}</span>
+              </div>
+              <span className="model-value" title={config.model}>{config.model}</span>
             </div>
           </div>
 
-          {(config.lastLatency !== undefined || config.lastTokens !== undefined) && (
-            <div className="card-stats">
-              <div className="stat-item">
-                <span className="stat-label">Latency</span>
+          {hasTestStats && (
+            <div className="test-summary-strip">
+              <div className="test-primary-metric">
+                <span className="stat-label">Last Test</span>
                 <span className={`stat-value ${config.status === 'ok' ? 'green' : config.status === 'failed' ? 'red' : 'amber'}`}>
-                  {config.lastLatency}ms
+                  {config.lastLatency !== undefined ? `${config.lastLatency}ms` : 'No latency'}
                 </span>
               </div>
-              <div className="stat-item">
+              <div className="test-secondary-metric">
                 <span className="stat-label">Tokens</span>
-                <span className="stat-value">{config.lastTokens}</span>
+                <span className="stat-value">{config.lastTokens ?? '—'}</span>
               </div>
-              {config.lastTestedAt && (
-                <div className="stat-item">
-                  <span className="stat-label">Last Tested</span>
-                  <span className="stat-value">{new Date(config.lastTestedAt).toLocaleTimeString()}</span>
-                </div>
-              )}
+              <div className="test-secondary-metric">
+                <span className="stat-label">Time</span>
+                <span className="stat-value">{lastTestedTime}</span>
+              </div>
             </div>
           )}
 
@@ -170,7 +178,7 @@ function ProfileCard({ config }: ProfileCardProps) {
                     <>
                       <span className="result-status success">✓</span>
                       <span className="result-stats-inline">
-                        {lastResult.latencyMs}ms • {lastResult.totalTokens} tokens
+                        Response details
                       </span>
                     </>
                   ) : (
@@ -202,6 +210,32 @@ function ProfileCard({ config }: ProfileCardProps) {
                   )}
                 </div>
               )}
+            </div>
+          )}
+
+          {showDeleteConfirm && (
+            <div className="delete-confirm">
+              <span>Delete "{config.name}"?</span>
+              {deleteError && <span className="delete-error">{deleteError}</span>}
+              <div className="delete-confirm-actions">
+                <button
+                  className="btn btn-danger"
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowDeleteConfirm(false)
+                    setDeleteError(null)
+                  }}
+                  disabled={isDeleting}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           )}
 
@@ -260,8 +294,9 @@ function ProfileCard({ config }: ProfileCardProps) {
             
             <button 
               className="btn-icon btn-delete" 
-              onClick={handleDelete} 
+              onClick={() => setShowDeleteConfirm(true)} 
               title="Delete"
+              disabled={isDeleting}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="3 6 5 6 21 6"></polyline>
@@ -286,7 +321,7 @@ function ProfileCard({ config }: ProfileCardProps) {
 
           <div className="card-form">
             <div className="field-group">
-              <label className="field-label">Name</label>
+              <label className="field-label">Use</label>
               <input
                 type="text"
                 className="field-input"

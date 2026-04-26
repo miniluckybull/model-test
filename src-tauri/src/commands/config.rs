@@ -129,7 +129,13 @@ pub fn update_api_config(update: UpdateConfig) -> Result<(), String> {
 #[tauri::command]
 pub fn delete_api_config(id: String) -> Result<(), String> {
     let mut configs = storage::read_configs()?;
+    let initial_len = configs.len();
     configs.retain(|c| c.id != id);
+    
+    if configs.len() == initial_len {
+        return Err(format!("Config with id '{}' not found", id));
+    }
+    
     storage::write_configs(&configs)?;
     Ok(())
 }
