@@ -67,7 +67,7 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
 
       <div className="card-form">
         <div className="field-group">
-          <label className="field-label">Name</label>
+          <label className="field-label">Use</label>
           <input
             type="text"
             className="field-input"
