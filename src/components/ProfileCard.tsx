@@ -126,7 +126,9 @@ function ProfileCard({ config }: ProfileCardProps) {
   const lastTestedTime = config.lastTestedAt
     ? new Date(config.lastTestedAt).toLocaleTimeString()
     : 'Never'
-  const hasTestStats = config.lastLatency !== undefined || config.lastTokens !== undefined || config.lastTestedAt
+  const hasLastLatency = typeof config.lastLatency === 'number'
+  const hasLastTokens = typeof config.lastTokens === 'number'
+  const hasTestStats = hasLastLatency || hasLastTokens || Boolean(config.lastTestedAt)
 
   return (
     <div className={`profile-card status-${config.status}`}>
@@ -154,12 +156,12 @@ function ProfileCard({ config }: ProfileCardProps) {
               <div className="test-primary-metric">
                 <span className="stat-label">Last Test</span>
                 <span className={`stat-value ${config.status === 'ok' ? 'green' : config.status === 'failed' ? 'red' : 'amber'}`}>
-                  {config.lastLatency !== undefined ? `${config.lastLatency}ms` : 'No latency'}
+                  {hasLastLatency ? `${config.lastLatency}ms` : '—'}
                 </span>
               </div>
               <div className="test-secondary-metric">
                 <span className="stat-label">Tokens</span>
-                <span className="stat-value">{config.lastTokens ?? '—'}</span>
+                <span className="stat-value">{hasLastTokens ? config.lastTokens : '—'}</span>
               </div>
               <div className="test-secondary-metric">
                 <span className="stat-label">Time</span>

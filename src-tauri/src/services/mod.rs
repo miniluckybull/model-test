@@ -47,27 +47,7 @@ pub async fn send_test_request(config: &ApiConfig) -> Result<ModelTestResponse, 
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
     
-    let parsed = parse_response(&json, &config.provider)?;
-
-    if let Some(actual_model) = parsed.actual_model.as_deref() {
-        if !models_match(&config.model, actual_model) {
-            return Err(format!(
-                "Model mismatch: requested '{}', API returned '{}'",
-                config.model, actual_model
-            ));
-        }
-    }
-
-    Ok(parsed)
-}
-
-fn models_match(requested: &str, actual: &str) -> bool {
-    let requested = requested.trim();
-    let actual = actual.trim();
-
-    requested.eq_ignore_ascii_case(actual)
-        || actual.ends_with(requested)
-        || requested.ends_with(actual)
+    parse_response(&json, &config.provider)
 }
 
 fn build_openai_request(config: &ApiConfig) -> (String, reqwest::header::HeaderMap, serde_json::Value) {
