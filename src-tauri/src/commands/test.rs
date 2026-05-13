@@ -23,16 +23,17 @@ pub async fn test_model(
     let elapsed = start.elapsed();
     
     let test_result = match result {
-        Ok((prompt_tokens, completion_tokens, response)) => {
+        Ok(response) => {
             TestResult {
                 config_id: config_id.clone(),
                 success: true,
                 latency_ms: elapsed.as_millis() as u64,
-                prompt_tokens,
-                completion_tokens,
-                total_tokens: prompt_tokens + completion_tokens,
+                prompt_tokens: response.prompt_tokens,
+                completion_tokens: response.completion_tokens,
+                total_tokens: response.prompt_tokens + response.completion_tokens,
                 error_message: None,
-                model_response: Some(response),
+                model_response: Some(response.content),
+                actual_model: response.actual_model,
             }
         }
         Err(error) => {
@@ -45,6 +46,7 @@ pub async fn test_model(
                 total_tokens: 0,
                 error_message: Some(error),
                 model_response: None,
+                actual_model: None,
             }
         }
     };

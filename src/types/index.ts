@@ -21,6 +21,7 @@ export interface TestResult {
   totalTokens: number;
   errorMessage?: string;
   modelResponse?: string;
+  actualModel?: string;
 }
 
 export interface ClaudeConfig {

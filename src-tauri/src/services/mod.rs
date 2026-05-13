@@ -1,7 +1,7 @@
 use reqwest::Client;
 use serde_json::json;
 use std::time::Duration;
-use crate::models::ApiConfig;
+use crate::models::{ApiConfig, ModelTestResponse};
 
 fn build_client() -> Result<Client, String> {
     Client::builder()
@@ -11,7 +11,7 @@ fn build_client() -> Result<Client, String> {
         .map_err(|e| format!("Failed to create HTTP client: {}", e))
 }
 
-pub async fn send_test_request(config: &ApiConfig) -> Result<(u64, u64, String), String> {
+pub async fn send_test_request(config: &ApiConfig) -> Result<ModelTestResponse, String> {
     let client = build_client()?;
     
     let (url, headers, body) = match config.provider.as_str() {
@@ -47,7 +47,27 @@ pub async fn send_test_request(config: &ApiConfig) -> Result<(u64, u64, String),
         .await
         .map_err(|e| format!("Failed to parse response: {}", e))?;
     
-    parse_response(&json, &config.provider)
+    let parsed = parse_response(&json, &config.provider)?;
+
+    if let Some(actual_model) = parsed.actual_model.as_deref() {
+        if !models_match(&config.model, actual_model) {
+            return Err(format!(
+                "Model mismatch: requested '{}', API returned '{}'",
+                config.model, actual_model
+            ));
+        }
+    }
+
+    Ok(parsed)
+}
+
+fn models_match(requested: &str, actual: &str) -> bool {
+    let requested = requested.trim();
+    let actual = actual.trim();
+
+    requested.eq_ignore_ascii_case(actual)
+        || actual.ends_with(requested)
+        || requested.ends_with(actual)
 }
 
 fn build_openai_request(config: &ApiConfig) -> (String, reqwest::header::HeaderMap, serde_json::Value) {
@@ -113,7 +133,7 @@ fn build_anthropic_request(config: &ApiConfig) -> (String, reqwest::header::Head
     (url, headers, body)
 }
 
-fn parse_response(json: &serde_json::Value, provider: &str) -> Result<(u64, u64, String), String> {
+fn parse_response(json: &serde_json::Value, provider: &str) -> Result<ModelTestResponse, String> {
     match provider {
         "anthropic" => {
             let usage = json.get("usage")
@@ -128,7 +148,14 @@ fn parse_response(json: &serde_json::Value, provider: &str) -> Result<(u64, u64,
                 .unwrap_or("")
                 .to_string();
             
-            Ok((prompt_tokens, completion_tokens, content))
+            let actual_model = json.get("model").and_then(|m| m.as_str()).map(String::from);
+
+            Ok(ModelTestResponse {
+                prompt_tokens,
+                completion_tokens,
+                content,
+                actual_model,
+            })
         }
         _ => {
             let usage = json.get("usage")
@@ -144,7 +171,14 @@ fn parse_response(json: &serde_json::Value, provider: &str) -> Result<(u64, u64,
                 .unwrap_or("")
                 .to_string();
             
-            Ok((prompt_tokens, completion_tokens, content))
+            let actual_model = json.get("model").and_then(|m| m.as_str()).map(String::from);
+
+            Ok(ModelTestResponse {
+                prompt_tokens,
+                completion_tokens,
+                content,
+                actual_model,
+            })
         }
     }
 }
