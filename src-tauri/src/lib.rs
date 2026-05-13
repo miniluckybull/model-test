@@ -6,7 +6,7 @@ mod services;
 mod storage;
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use tauri::{Emitter, Manager, async_runtime};
+use tauri::{Emitter, async_runtime};
 use tokio::time::sleep;
 use std::time::Instant;
 use crate::models::TestResult;
@@ -23,16 +23,17 @@ async fn test_single_config(app_handle: tauri::AppHandle, config: models::ApiCon
     let elapsed = start.elapsed();
 
     let test_result = match result {
-        Ok((prompt_tokens, completion_tokens, response)) => {
+        Ok(response) => {
             TestResult {
                 config_id: config.id.clone(),
                 success: true,
                 latency_ms: elapsed.as_millis() as u64,
-                prompt_tokens,
-                completion_tokens,
-                total_tokens: prompt_tokens + completion_tokens,
+                prompt_tokens: response.prompt_tokens,
+                completion_tokens: response.completion_tokens,
+                total_tokens: response.prompt_tokens + response.completion_tokens,
                 error_message: None,
-                model_response: Some(response),
+                model_response: Some(response.content),
+                actual_model: response.actual_model,
             }
         }
         Err(error) => {
@@ -45,6 +46,7 @@ async fn test_single_config(app_handle: tauri::AppHandle, config: models::ApiCon
                 total_tokens: 0,
                 error_message: Some(error),
                 model_response: None,
+                actual_model: None,
             }
         }
     };

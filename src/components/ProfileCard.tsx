@@ -47,6 +47,7 @@ function ProfileCard({ config }: ProfileCardProps) {
             totalTokens: payload.total_tokens,
             errorMessage: payload.error_message,
             modelResponse: payload.model_response,
+            actualModel: payload.actual_model,
           }
           setLastResult(result)
           updateTestResult(config.id, result)
@@ -89,6 +90,7 @@ function ProfileCard({ config }: ProfileCardProps) {
         completionTokens: 0,
         totalTokens: 0,
         errorMessage: error.toString(),
+        actualModel: undefined,
       }
       setLastResult(result)
       updateTestResult(config.id, result)
@@ -178,7 +180,7 @@ function ProfileCard({ config }: ProfileCardProps) {
                     <>
                       <span className="result-status success">✓</span>
                       <span className="result-stats-inline">
-                        Response details
+                        {lastResult.actualModel ? `Returned: ${lastResult.actualModel}` : 'Response details'}
                       </span>
                     </>
                   ) : (
@@ -204,7 +206,12 @@ function ProfileCard({ config }: ProfileCardProps) {
               {resultExpanded && (
                 <div className="result-details">
                   {lastResult.success ? (
-                    <pre className="result-response">{lastResult.modelResponse}</pre>
+                    <div>
+                      {lastResult.actualModel && (
+                        <div className="result-error-full">Actual model: {lastResult.actualModel}</div>
+                      )}
+                      <pre className="result-response">{lastResult.modelResponse}</pre>
+                    </div>
                   ) : (
                     <div className="result-error-full">{lastResult.errorMessage}</div>
                   )}

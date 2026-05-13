@@ -27,10 +27,30 @@
 
 ## 快速开始
 
+### 普通用户安装
+
+如果只是安装使用，不需要克隆源码，也不需要安装 Node.js 或 Rust：
+
+1. 下载仓库根目录的 `Model_Tester_0.1.0_macOS.dmg`
+2. 双击打开 DMG
+3. 将 `Model Tester.app` 拖到 `Applications` / `应用程序`
+4. 首次打开如提示无法验证开发者，请在 Finder 中右键应用并选择 **打开**
+
+### 开发者本地运行
+
 ### 环境要求
 
 - Node.js 18.18+
 - Rust 1.77+ (用于 Tauri 桌面应用)
+
+macOS 安装 Rust：
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+```
+
+如果运行 `npm run tauri:dev` 时出现 `failed to run 'cargo metadata'` 或 `No such file or directory (os error 2)`，说明当前终端找不到 Rust/Cargo，请先完成上面的 Rust 安装并重新打开终端。
 
 ### 安装依赖
 

@@ -30,6 +30,15 @@ pub struct TestResult {
     pub total_tokens: u64,
     pub error_message: Option<String>,
     pub model_response: Option<String>,
+    pub actual_model: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ModelTestResponse {
+    pub prompt_tokens: u64,
+    pub completion_tokens: u64,
+    pub content: String,
+    pub actual_model: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
