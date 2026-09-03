@@ -12,7 +12,7 @@
     "tauri:build": "node scripts/check-tauri-prereqs.mjs && tauri build"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.10.1",
+    "@tauri-apps/api": "~2.10.1",
     "@tauri-apps/plugin-dialog": "^2.7.3",
     "@tauri-apps/plugin-store": "^2.2.0",
     "react": "^19.2.0",
