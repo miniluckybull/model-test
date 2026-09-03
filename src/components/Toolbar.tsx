@@ -58,13 +58,13 @@ export function Toolbar() {
 
   return (
     <div className="toolbar">
-      <button onClick={() => setShowTemplates(!showTemplates)} className="toolbar-btn">
+      <button onClick={() => setShowTemplates(!showTemplates)} className="btn btn-secondary">
         📋 Templates
       </button>
-      <button onClick={handleExportAll} className="toolbar-btn">
+      <button onClick={handleExportAll} className="btn btn-secondary">
         📤 Export All
       </button>
-      <button onClick={() => setShowImport(!showImport)} className="toolbar-btn">
+      <button onClick={() => setShowImport(!showImport)} className="btn btn-secondary">
         📥 Import
       </button>
 
@@ -72,7 +72,7 @@ export function Toolbar() {
         <div className="dropdown-panel">
           <div className="panel-header">
             <h3>Configuration Templates</h3>
-            <button onClick={() => setShowTemplates(false)} className="close-btn">✕</button>
+            <button onClick={() => setShowTemplates(false)} className="dialog-close">✕</button>
           </div>
           <div className="template-list">
             {CONFIG_TEMPLATES.map((template, index) => (
@@ -82,7 +82,7 @@ export function Toolbar() {
                   <span className="template-desc">{template.description}</span>
                   <code className="template-endpoint">{template.endpoint}</code>
                 </div>
-                <button onClick={() => handleUseTemplate(template)} className="use-template-btn">
+                <button onClick={() => handleUseTemplate(template)} className="btn btn-primary">
                   Use
                 </button>
               </div>
@@ -95,7 +95,7 @@ export function Toolbar() {
         <div className="dropdown-panel">
           <div className="panel-header">
             <h3>Import Configurations</h3>
-            <button onClick={() => setShowImport(false)} className="close-btn">✕</button>
+            <button onClick={() => setShowImport(false)} className="dialog-close">✕</button>
           </div>
           <div className="import-form">
             <textarea
@@ -107,10 +107,10 @@ export function Toolbar() {
             />
             {importError && <div className="import-error">{importError}</div>}
             <div className="import-actions">
-              <button onClick={() => setShowImport(false)} className="cancel-btn">
+              <button onClick={() => setShowImport(false)} className="btn btn-secondary">
                 Cancel
               </button>
-              <button onClick={handleImport} disabled={importing} className="import-btn">
+              <button onClick={handleImport} disabled={importing} className="btn btn-primary">
                 {importing ? 'Importing...' : 'Import'}
               </button>
             </div>
