@@ -22,7 +22,7 @@ pub async fn test_model(
     config_id: String,
 ) -> Result<(), String> {
     let config = storage::find_config(&config_id)?
-        .ok_or_else(|| format!("Config with id '{}' not found", config_id))?;
+        .ok_or_else(|| format!("找不到 id 为 '{}' 的配置", config_id))?;
 
     let start = Instant::now();
     let result = services::send_test_request(&config).await;

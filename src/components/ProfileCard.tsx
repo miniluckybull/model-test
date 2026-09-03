@@ -11,6 +11,13 @@ interface ProfileCardProps {
   config: ApiConfig
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  idle: '空闲',
+  running: '运行中',
+  ok: '可用',
+  failed: '失败',
+}
+
 function ProfileCard({ config }: ProfileCardProps) {
   const updateConfig = useConfigStore((state) => state.updateConfig)
   const deleteConfig = useConfigStore((state) => state.deleteConfig)
@@ -122,10 +129,10 @@ function ProfileCard({ config }: ProfileCardProps) {
   }
 
   const statusColor = STATUS_COLORS[config.status]
-  const providerName = PROVIDERS[config.provider]?.name || 'Custom'
+  const providerName = PROVIDERS[config.provider]?.name || '自定义'
   const lastTestedTime = config.lastTestedAt
     ? new Date(config.lastTestedAt).toLocaleTimeString()
-    : 'Never'
+    : '从未'
   const hasLastLatency = typeof config.lastLatency === 'number'
   const hasLastTokens = typeof config.lastTokens === 'number'
   const hasTestStats = hasLastLatency || hasLastTokens || Boolean(config.lastTestedAt)
@@ -137,14 +144,14 @@ function ProfileCard({ config }: ProfileCardProps) {
           <div className="config-overview" title={config.endpoint}>
             <div className="use-preview">
               <div className="preview-header">
-                <span className="meta-label">Use</span>
-                <Tag color={statusColor}>{config.status}</Tag>
+                <span className="meta-label">用途</span>
+                <Tag color={statusColor}>{STATUS_LABELS[config.status] ?? config.status}</Tag>
               </div>
               <span className="use-value" title={config.name}>{config.name}</span>
             </div>
             <div className="model-preview">
               <div className="preview-header">
-                <span className="meta-label">Model</span>
+                <span className="meta-label">模型</span>
                 <span className="provider-chip">{providerName}</span>
               </div>
               <span className="model-value" title={config.model}>{config.model}</span>
@@ -154,7 +161,7 @@ function ProfileCard({ config }: ProfileCardProps) {
           {hasTestStats && (
             <div className="test-summary-strip">
               <div className="test-primary-metric">
-                <span className="stat-label">Last Test</span>
+                <span className="stat-label">最近测试</span>
                 <span className={`stat-value ${config.status === 'ok' ? 'green' : config.status === 'failed' ? 'red' : 'amber'}`}>
                   {hasLastLatency ? `${config.lastLatency}ms` : '—'}
                 </span>
@@ -164,7 +171,7 @@ function ProfileCard({ config }: ProfileCardProps) {
                 <span className="stat-value">{hasLastTokens ? config.lastTokens : '—'}</span>
               </div>
               <div className="test-secondary-metric">
-                <span className="stat-label">Time</span>
+                <span className="stat-label">时间</span>
                 <span className="stat-value">{lastTestedTime}</span>
               </div>
             </div>
@@ -172,17 +179,17 @@ function ProfileCard({ config }: ProfileCardProps) {
 
           {lastResult && (
             <div className={`result-panel-compact ${resultExpanded ? 'expanded' : ''}`}>
-              <button 
-                className="result-toggle" 
+              <button
+                className="result-toggle"
                 onClick={() => setResultExpanded(!resultExpanded)}
-                aria-label="Toggle result details"
+                aria-label="切换结果详情"
               >
                 <span className="result-summary">
                   {lastResult.success ? (
                     <>
                       <span className="result-status success">✓</span>
                       <span className="result-stats-inline">
-                        {lastResult.actualModel ? `Returned: ${lastResult.actualModel}` : 'Response details'}
+                        {lastResult.actualModel ? `返回模型：${lastResult.actualModel}` : '响应详情'}
                       </span>
                     </>
                   ) : (
@@ -192,25 +199,25 @@ function ProfileCard({ config }: ProfileCardProps) {
                     </>
                   )}
                 </span>
-                <svg 
-                  className={`chevron ${resultExpanded ? 'rotated' : ''}`} 
-                  width="12" 
-                  height="12" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
+                <svg
+                  className={`chevron ${resultExpanded ? 'rotated' : ''}`}
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
                   strokeWidth="2"
                 >
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </button>
-              
+
               {resultExpanded && (
                 <div className="result-details">
                   {lastResult.success ? (
                     <div>
                       {lastResult.actualModel && (
-                        <div className="result-error-full">Actual model: {lastResult.actualModel}</div>
+                        <div className="result-error-full">实际模型：{lastResult.actualModel}</div>
                       )}
                       <pre className="result-response">{lastResult.modelResponse}</pre>
                     </div>
@@ -224,7 +231,7 @@ function ProfileCard({ config }: ProfileCardProps) {
 
           {showDeleteConfirm && (
             <div className="delete-confirm">
-              <span>Delete "{config.name}"?</span>
+              <span>删除"{config.name}"？</span>
               {deleteError && <span className="delete-error">{deleteError}</span>}
               <div className="delete-confirm-actions">
                 <button
@@ -232,7 +239,7 @@ function ProfileCard({ config }: ProfileCardProps) {
                   onClick={handleDelete}
                   disabled={isDeleting}
                 >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
+                  {isDeleting ? '删除中…' : '删除'}
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -242,7 +249,7 @@ function ProfileCard({ config }: ProfileCardProps) {
                   }}
                   disabled={isDeleting}
                 >
-                  Cancel
+                  取消
                 </button>
               </div>
             </div>
@@ -253,15 +260,15 @@ function ProfileCard({ config }: ProfileCardProps) {
               className="btn-icon btn-test"
               onClick={handleTest}
               disabled={config.status === 'running'}
-              title={config.status === 'running' ? 'Testing...' : 'Test'}
+              title={config.status === 'running' ? '测试中…' : '测试'}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
               </svg>
             </button>
-            
-            <button 
-              className="btn-icon btn-edit" 
+
+            <button
+              className="btn-icon btn-edit"
               onClick={() => {
                 setEditName(config.name)
                 setEditProvider(config.provider)
@@ -270,41 +277,41 @@ function ProfileCard({ config }: ProfileCardProps) {
                 setEditApiKey(config.apiKey)
                 setIsEditing(true)
               }}
-              title="Edit"
+              title="编辑"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
             </button>
-            
-            <button 
-              className="btn-icon btn-duplicate" 
-              onClick={() => duplicateConfig(config.id)} 
-              title="Duplicate"
+
+            <button
+              className="btn-icon btn-duplicate"
+              onClick={() => duplicateConfig(config.id)}
+              title="复制"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
             </button>
-            
+
             {config.status === 'ok' && (
-              <button 
-                className="btn-icon btn-claude" 
+              <button
+                className="btn-icon btn-claude"
                 onClick={() => setShowClaudeDialog(true)}
-                title="Apply to Claude Code"
+                title="应用至 Claude Code"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 2L2 12l10 10 10-10L12 2z"/>
                 </svg>
               </button>
             )}
-            
-            <button 
-              className="btn-icon btn-delete" 
-              onClick={() => setShowDeleteConfirm(true)} 
-              title="Delete"
+
+            <button
+              className="btn-icon btn-delete"
+              onClick={() => setShowDeleteConfirm(true)}
+              title="删除"
               disabled={isDeleting}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -324,13 +331,13 @@ function ProfileCard({ config }: ProfileCardProps) {
         <>
           <div className="card-header">
             <div>
-              <h3 className="card-name">Edit Profile</h3>
+              <h3 className="card-name">编辑配置</h3>
             </div>
           </div>
 
           <div className="card-form">
             <div className="field-group">
-              <label className="field-label">Use</label>
+              <label className="field-label">用途</label>
               <input
                 type="text"
                 className="field-input"
@@ -341,7 +348,7 @@ function ProfileCard({ config }: ProfileCardProps) {
 
             <div className="field-row">
               <div className="field-group">
-                <label className="field-label">Provider</label>
+                <label className="field-label">提供商</label>
                 <select
                   className="field-input"
                   value={editProvider}
@@ -349,11 +356,11 @@ function ProfileCard({ config }: ProfileCardProps) {
                 >
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic</option>
-                  <option value="custom">Custom</option>
+                  <option value="custom">自定义</option>
                 </select>
               </div>
               <div className="field-group">
-                <label className="field-label">Model</label>
+                <label className="field-label">模型</label>
                 <input
                   type="text"
                   className="field-input"
@@ -364,7 +371,7 @@ function ProfileCard({ config }: ProfileCardProps) {
             </div>
 
             <div className="field-group">
-              <label className="field-label">Endpoint</label>
+              <label className="field-label">端点</label>
               <input
                 type="text"
                 className="field-input"
@@ -386,10 +393,10 @@ function ProfileCard({ config }: ProfileCardProps) {
 
           <div className="card-footer">
             <button className="btn btn-success" onClick={handleSave}>
-              Save
+              保存
             </button>
             <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>
-              Cancel
+              取消
             </button>
           </div>
         </>

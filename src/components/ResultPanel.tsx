@@ -14,14 +14,14 @@ function ResultPanel({ success, latencyMs, tokens, response, error }: ResultPane
       {success ? (
         <div>
           <div style={{ display: 'flex', gap: '16px', marginBottom: '8px' }}>
-            <span>Latency: <strong>{latencyMs}ms</strong></span>
-            <span>Tokens: <strong>{tokens}</strong></span>
+            <span>延迟：<strong>{latencyMs}ms</strong></span>
+            <span>Tokens：<strong>{tokens}</strong></span>
           </div>
           {response && <pre>{response}</pre>}
         </div>
       ) : (
         <div>
-          <strong>Error:</strong> {error}
+          <strong>错误：</strong> {error}
         </div>
       )}
     </div>

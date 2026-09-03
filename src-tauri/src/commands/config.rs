@@ -136,7 +136,7 @@ pub fn update_api_config(update: UpdateConfig) -> Result<(), String> {
             config.order = Some(order);
         }
     } else {
-        return Err(format!("Config with id '{}' not found", update.id));
+        return Err(format!("找不到 id 为 '{}' 的配置", update.id));
     }
     
     storage::write_configs(&configs)?;
@@ -150,7 +150,7 @@ pub fn delete_api_config(id: String) -> Result<(), String> {
     configs.retain(|c| c.id != id);
     
     if configs.len() == initial_len {
-        return Err(format!("Config with id '{}' not found", id));
+        return Err(format!("找不到 id 为 '{}' 的配置", id));
     }
     
     storage::write_configs(&configs)?;

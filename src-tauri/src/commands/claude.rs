@@ -96,7 +96,7 @@ fn get_claude_config_path(custom_path: Option<&str>) -> Result<PathBuf, String> 
         return Ok(existing);
     }
     
-    let home = dirs::home_dir().ok_or("Cannot find home directory")?;
+    let home = dirs::home_dir().ok_or("找不到主目录")?;
     Ok(home.join(".claude").join("settings.json"))
 }
 
@@ -111,10 +111,10 @@ fn read_claude_config(custom_path: Option<&str>) -> Result<ClaudeConfig, String>
     }
 
     let content = fs::read_to_string(&path)
-        .map_err(|e| format!("Failed to read config file: {}", e))?;
+        .map_err(|e| format!("读取配置文件失败: {}", e))?;
     
     let config: ClaudeConfig = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse config JSON: {}", e))?;
+        .map_err(|e| format!("解析配置 JSON 失败: {}", e))?;
     
     Ok(config)
 }
@@ -124,14 +124,14 @@ fn write_claude_config(config: &ClaudeConfig, custom_path: Option<&str>) -> Resu
 
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create config directory: {}", e))?;
+            .map_err(|e| format!("创建配置目录失败: {}", e))?;
     }
 
     let json = serde_json::to_string_pretty(config)
-        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+        .map_err(|e| format!("序列化配置失败: {}", e))?;
 
     fs::write(&path, json)
-        .map_err(|e| format!("Failed to write config file: {}", e))?;
+        .map_err(|e| format!("写入配置文件失败: {}", e))?;
 
     Ok(path.to_string_lossy().to_string())
 }
@@ -337,7 +337,7 @@ pub fn apply_custom_claude_config(config_json: String, custom_config_path: Optio
     let mut config = read_claude_config(path_ref)?;
 
     let custom_config: serde_json::Value = serde_json::from_str(&config_json)
-        .map_err(|e| format!("Failed to parse config JSON: {}", e))?;
+        .map_err(|e| format!("解析配置 JSON 失败: {}", e))?;
 
     if let Some(env) = custom_config.get("env").and_then(|v| v.as_object()) {
         for (key, value) in env {
@@ -381,11 +381,11 @@ pub fn export_to_project(
     // Validate project path
     let project_dir = PathBuf::from(&project_path);
     if !project_dir.exists() {
-        return Err(format!("Project directory does not exist: {}", project_path));
+        return Err(format!("项目目录不存在: {}", project_path));
     }
 
     if !project_dir.is_dir() {
-        return Err(format!("Path is not a directory: {}", project_path));
+        return Err(format!("路径不是目录: {}", project_path));
     }
 
     // Create .claude directory if it doesn't exist
@@ -394,7 +394,7 @@ pub fn export_to_project(
 
     if created_directory {
         fs::create_dir_all(&claude_dir)
-            .map_err(|e| format!("Failed to create .claude directory: {}", e))?;
+            .map_err(|e| format!("创建 .claude 目录失败: {}", e))?;
     }
 
     // Build config
@@ -449,10 +449,10 @@ pub fn export_to_project(
     // Write to project's .claude/settings.json
     let config_path = claude_dir.join("settings.json");
     let json = serde_json::to_string_pretty(&config)
-        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+        .map_err(|e| format!("序列化配置失败: {}", e))?;
 
     fs::write(&config_path, json)
-        .map_err(|e| format!("Failed to write config file: {}", e))?;
+        .map_err(|e| format!("写入配置文件失败: {}", e))?;
 
     Ok(ExportToProjectResult {
         config_path: config_path.to_string_lossy().to_string(),

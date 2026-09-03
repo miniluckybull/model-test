@@ -38,7 +38,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     const sourceConfig = get().configs.find((c) => c.id === id);
     if (!sourceConfig) return;
 
-    const newName = `${sourceConfig.name} (Copy)`;
+    const newName = `${sourceConfig.name} (副本)`;
     const newId = await addApiConfig({
       name: newName,
       provider: sourceConfig.provider,
@@ -162,12 +162,12 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       const configs = JSON.parse(jsonData);
 
       if (!Array.isArray(configs)) {
-        throw new Error('Invalid format: expected an array of configs');
+        throw new Error('格式无效：需要配置数组');
       }
 
       for (const config of configs) {
         if (!config.name || !config.provider || !config.endpoint || !config.model || !config.apiKey) {
-          throw new Error(`Invalid config: missing required fields in "${config.name || 'unnamed'}"`);
+          throw new Error(`配置无效："${config.name || '未命名'}" 缺少必填字段`);
         }
 
         await get().addConfig({
@@ -183,7 +183,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
 
       await get().loadConfigs();
     } catch (error) {
-      throw new Error(`Import failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`导入失败：${error instanceof Error ? error.message : String(error)}`);
     }
   },
 
