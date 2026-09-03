@@ -47,7 +47,7 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
       setValidationError(null)
       onAdd?.()
     } catch (error) {
-      setValidationError(`Failed to add config: ${error}`)
+      setValidationError(`添加配置失败：${error}`)
     }
   }
 
@@ -66,7 +66,7 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
     return (
       <button className="add-profile-tile" onClick={() => setIsAdding(true)}>
         <span className="add-icon">+</span>
-        <span className="add-text">Add New Profile</span>
+        <span className="add-text">添加新配置</span>
       </button>
     )
   }
@@ -75,18 +75,18 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
     <div className="profile-card">
       <div className="card-header">
         <div>
-          <h3 className="card-name">New API Profile</h3>
-          <p className="card-description">Configure your model endpoint</p>
+          <h3 className="card-name">新建 API 配置</h3>
+          <p className="card-description">配置你的模型端点</p>
         </div>
       </div>
 
       <div className="card-form">
         <div className="field-group">
-          <label className="field-label">Use</label>
-          <input
-            type="text"
-            className="field-input"
-            placeholder="e.g., My Claude Model"
+            <label className="field-label">用途</label>
+            <input
+              type="text"
+              className="field-input"
+              placeholder="例如：我的 Claude 模型"
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
@@ -94,7 +94,7 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
 
         <div className="field-row">
           <div className="field-group">
-            <label className="field-label">Provider</label>
+            <label className="field-label">提供商</label>
             <select
               className="field-input"
               value={provider}
@@ -102,15 +102,15 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
             >
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
-              <option value="custom">Custom</option>
+              <option value="custom">自定义</option>
             </select>
           </div>
           <div className="field-group">
-            <label className="field-label">Model</label>
+            <label className="field-label">模型</label>
             <input
               type="text"
               className="field-input"
-              placeholder="e.g., gpt-4o-mini"
+              placeholder="例如：gpt-4o-mini"
               value={model}
               onChange={(e) => setModel(e.target.value)}
             />
@@ -118,7 +118,7 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
         </div>
 
         <div className="field-group">
-          <label className="field-label">Endpoint</label>
+            <label className="field-label">端点</label>
           <input
             type="text"
             className="field-input"
@@ -148,10 +148,10 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
 
       <div className="card-footer">
         <button className="btn btn-primary" onClick={handleAdd} disabled={!name || !endpoint || !model || !apiKey}>
-          Add Profile
+          添加配置
         </button>
         <button className="btn btn-secondary" onClick={() => setIsAdding(false)}>
-          Cancel
+          取消
         </button>
       </div>
     </div>

@@ -38,7 +38,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
 
   const handleExportSelected = () => {
     if (selectedIds.length === 0) {
-      alert('Please select at least one config to export')
+      alert('请至少选择一个要导出的配置')
       return
     }
     exportConfigs(selectedIds)
@@ -46,7 +46,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
 
   const handleImport = async () => {
     if (!importText.trim()) {
-      setImportError('Please paste JSON data to import')
+      setImportError('请粘贴要导入的 JSON 数据')
       return
     }
 
@@ -84,25 +84,25 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
     <div className="dialog-overlay" onClick={onClose}>
       <div className="dialog-content dialog-large" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
-          <h2>Import / Export Configs</h2>
+          <h2>导入 / 导出配置</h2>
           <button className="dialog-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="dialog-body">
           {/* Export Section */}
           <div className="import-export-section">
-            <h3>Export Configs</h3>
+            <h3>导出配置</h3>
 
             <div className="export-actions">
               <button onClick={handleExportAll} className="btn btn-secondary">
-                Export All ({configs.length})
+                全部导出 ({configs.length})
               </button>
               <button
                 onClick={handleExportSelected}
                 className="btn btn-secondary"
                 disabled={selectedIds.length === 0}
               >
-                Export Selected ({selectedIds.length})
+                导出选中 ({selectedIds.length})
               </button>
             </div>
 
@@ -115,7 +115,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
                       checked={selectedIds.length === configs.length}
                       onChange={handleSelectAll}
                     />
-                    <span>Select All</span>
+                    <span>全选</span>
                   </label>
                 </div>
                 <div className="selection-list">
@@ -138,11 +138,11 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
 
           {/* Import Section */}
           <div className="import-export-section">
-            <h3>Import Configs</h3>
+            <h3>导入配置</h3>
 
             <div className="import-file-input">
               <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
-                Choose JSON File
+                选择 JSON 文件
                 <input
                   type="file"
                   accept=".json"
@@ -150,14 +150,14 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
                   style={{ display: 'none' }}
                 />
               </label>
-              <span className="form-hint">Or paste JSON below</span>
+              <span className="form-hint">或在下方粘贴 JSON</span>
             </div>
 
             <textarea
               className="import-textarea"
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
-              placeholder='Paste exported JSON here, e.g.:
+              placeholder='在此粘贴导出的 JSON，例如：
 [
   {
     "name": "My Config",
@@ -178,7 +178,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
 
             {importSuccess && (
               <div className="success-message">
-                ✓ Import successful!
+                ✓ 导入成功！
               </div>
             )}
 
@@ -187,14 +187,14 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
               className="btn btn-primary"
               disabled={isImporting || !importText.trim()}
             >
-              {isImporting ? 'Importing...' : 'Import'}
+              {isImporting ? '导入中…' : '导入'}
             </button>
           </div>
         </div>
 
         <div className="dialog-footer">
           <button onClick={onClose} className="btn btn-secondary">
-            Close
+            关闭
           </button>
         </div>
       </div>

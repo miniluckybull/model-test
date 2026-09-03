@@ -47,44 +47,44 @@ export function StatisticsPanel() {
 
   return (
     <div className="statistics-panel">
-      <h3>Statistics</h3>
+      <h3>统计</h3>
 
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value-lg">{stats.total}</div>
-          <div className="stat-label">Total Configs</div>
+          <div className="stat-label">总配置</div>
         </div>
 
         <div className="stat-card">
           <div className="stat-value-lg stat-ok">{stats.ok}</div>
-          <div className="stat-label">Available</div>
+          <div className="stat-label">可用</div>
         </div>
 
         <div className="stat-card">
           <div className="stat-value-lg stat-failed">{stats.failed}</div>
-          <div className="stat-label">Failed</div>
+          <div className="stat-label">失败</div>
         </div>
 
         <div className="stat-card">
           <div className="stat-value-lg">{stats.successRate}%</div>
-          <div className="stat-label">Success Rate</div>
+          <div className="stat-label">成功率</div>
         </div>
 
         {stats.avgLatency > 0 && (
           <>
             <div className="stat-card">
               <div className="stat-value-lg">{stats.avgLatency}ms</div>
-              <div className="stat-label">Avg Latency</div>
+              <div className="stat-label">平均延迟</div>
             </div>
 
             <div className="stat-card">
               <div className="stat-value-lg stat-ok">{stats.fastestLatency}ms</div>
-              <div className="stat-label">Fastest</div>
+              <div className="stat-label">最快</div>
             </div>
 
             <div className="stat-card">
               <div className="stat-value-lg stat-failed">{stats.slowestLatency}ms</div>
-              <div className="stat-label">Slowest</div>
+              <div className="stat-label">最慢</div>
             </div>
           </>
         )}
@@ -92,7 +92,7 @@ export function StatisticsPanel() {
 
       {Object.keys(stats.byProvider).length > 0 && (
         <div className="provider-stats">
-          <h4>By Provider</h4>
+          <h4>按提供商</h4>
           <div className="provider-grid">
             {Object.entries(stats.byProvider).map(([provider, count]) => (
               <div key={provider} className="provider-item">

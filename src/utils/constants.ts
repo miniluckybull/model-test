@@ -10,7 +10,7 @@ export const PROVIDERS = {
     defaultModel: 'gpt-4o-mini',
   },
   custom: {
-    name: 'Custom',
+    name: '自定义',
     defaultEndpoint: '',
     defaultModel: '',
   },

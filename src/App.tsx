@@ -6,18 +6,14 @@ import ControlsGrid from './components/ControlsGrid'
 import { Toolbar } from './components/Toolbar'
 import { FilterBar } from './components/FilterBar'
 import { StatisticsPanel } from './components/StatisticsPanel'
-import { BatchTestPanel } from './components/BatchTestPanel'
 
 function App() {
   const loadConfigs = useConfigStore((state) => state.loadConfigs)
   const configs = useConfigStore((state) => state.configs)
-  const deleteConfig = useConfigStore((state) => state.deleteConfig)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showStats, setShowStats] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
-  const [showBatchTest, setShowBatchTest] = useState(false)
 
   useEffect(() => {
     loadConfigs()
@@ -30,7 +26,7 @@ function App() {
     setupListeners()
   }, [loadConfigs])
 
-  // Filter configs based on search and tags
+  // 根据搜索和标签过滤配置
   const filteredConfigs = configs.filter(config => {
     const matchesSearch = !searchQuery ||
       config.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -43,33 +39,6 @@ function App() {
     return matchesSearch && matchesTags
   })
 
-  const handleSelectAll = () => {
-    if (selectedIds.length === filteredConfigs.length) {
-      setSelectedIds([])
-    } else {
-      setSelectedIds(filteredConfigs.map(c => c.id))
-    }
-  }
-
-  const handleToggleSelect = (id: string) => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    )
-  }
-
-  const handleBatchDelete = async () => {
-    if (!confirm(`Delete ${selectedIds.length} configurations?`)) return
-
-    for (const id of selectedIds) {
-      await deleteConfig(id)
-    }
-    setSelectedIds([])
-  }
-
-  const handleBatchTest = () => {
-    setShowBatchTest(true)
-  }
-
   return (
     <div className="app">
       <Header />
@@ -80,7 +49,7 @@ function App() {
             onClick={() => setShowStats(!showStats)}
             className="btn btn-secondary"
           >
-            {showStats ? '📊 Hide Stats' : '📊 Show Stats'}
+            {showStats ? '📊 隐藏统计' : '📊 显示统计'}
           </button>
         </div>
 
@@ -95,50 +64,11 @@ function App() {
 
         <div className="filter-result-info">
           {filteredConfigs.length !== configs.length && (
-            <span>Showing {filteredConfigs.length} of {configs.length} configurations</span>
+            <span>显示 {filteredConfigs.length} / {configs.length} 个配置</span>
           )}
         </div>
 
-        {filteredConfigs.length > 0 && (
-          <div className="batch-actions-bar">
-            <label className="select-all-checkbox">
-              <input
-                type="checkbox"
-                checked={selectedIds.length === filteredConfigs.length && filteredConfigs.length > 0}
-                onChange={handleSelectAll}
-              />
-              <span>Select All</span>
-            </label>
-
-            {selectedIds.length > 0 && (
-              <div className="batch-actions">
-                <span className="selected-count">{selectedIds.length} selected</span>
-                <button onClick={handleBatchTest} className="btn btn-primary">
-                  🧪 Batch Test
-                </button>
-                <button onClick={handleBatchDelete} className="btn btn-danger">
-                  🗑️ Delete
-                </button>
-                <button onClick={() => setSelectedIds([])} className="btn btn-secondary">
-                  Clear
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {showBatchTest && selectedIds.length > 0 && (
-          <BatchTestPanel
-            selectedIds={selectedIds}
-            onClose={() => setShowBatchTest(false)}
-          />
-        )}
-
-        <ControlsGrid
-          filteredConfigs={filteredConfigs}
-          selectedIds={selectedIds}
-          onToggleSelect={handleToggleSelect}
-        />
+        <ControlsGrid filteredConfigs={filteredConfigs} />
       </main>
     </div>
   )

@@ -12,7 +12,7 @@ export function FilterBar({ searchQuery, onSearchChange, selectedTags, onTagsCha
   const configs = useConfigStore((state) => state.configs)
   const [showTagFilter, setShowTagFilter] = useState(false)
 
-  // Extract all unique tags from configs
+  // 提取所有唯一标签
   const allTags = Array.from(
     new Set(configs.flatMap(c => c.tags || []))
   ).sort()
@@ -30,7 +30,7 @@ export function FilterBar({ searchQuery, onSearchChange, selectedTags, onTagsCha
       <div className="search-box">
         <input
           type="text"
-          placeholder="Search configurations..."
+          placeholder="搜索配置…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="search-input"
@@ -48,16 +48,16 @@ export function FilterBar({ searchQuery, onSearchChange, selectedTags, onTagsCha
             onClick={() => setShowTagFilter(!showTagFilter)}
             className="btn btn-secondary"
           >
-            🏷️ Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
+            🏷️ 标签 {selectedTags.length > 0 && `(${selectedTags.length})`}
           </button>
 
           {showTagFilter && (
             <div className="tag-dropdown">
               <div className="tag-dropdown-header">
-                <span>Filter by tags</span>
+                <span>按标签筛选</span>
                 {selectedTags.length > 0 && (
                   <button onClick={() => onTagsChange([])} className="clear-tags-btn">
-                    Clear
+                    清除
                   </button>
                 )}
               </div>
@@ -82,7 +82,7 @@ export function FilterBar({ searchQuery, onSearchChange, selectedTags, onTagsCha
         <div className="active-filters">
           {searchQuery && (
             <span className="filter-chip">
-              Search: "{searchQuery}"
+              搜索："{searchQuery}"
               <button onClick={() => onSearchChange('')}>✕</button>
             </span>
           )}

@@ -17,7 +17,7 @@ export function Toolbar() {
 
   const handleImport = async () => {
     if (!importText.trim()) {
-      setImportError('Please paste JSON data')
+      setImportError('请粘贴 JSON 数据')
       return
     }
 
@@ -28,7 +28,7 @@ export function Toolbar() {
       await importConfigs(importText)
       setImportText('')
       setShowImport(false)
-      alert('Import successful!')
+      alert('导入成功！')
     } catch (error) {
       setImportError(error instanceof Error ? error.message : String(error))
     } finally {
@@ -37,7 +37,7 @@ export function Toolbar() {
   }
 
   const handleUseTemplate = async (template: typeof CONFIG_TEMPLATES[0]) => {
-    const apiKey = prompt(`Enter API Key for ${template.name}:`)
+    const apiKey = prompt(`请输入 ${template.name} 的 API Key：`)
     if (!apiKey) return
 
     try {
@@ -50,28 +50,28 @@ export function Toolbar() {
         tags: ['template'],
       })
       setShowTemplates(false)
-      alert('Template added successfully!')
+      alert('模板添加成功！')
     } catch (error) {
-      alert(`Failed to add template: ${error}`)
+      alert(`添加模板失败：${error}`)
     }
   }
 
   return (
     <div className="toolbar">
       <button onClick={() => setShowTemplates(!showTemplates)} className="btn btn-secondary">
-        📋 Templates
+        📋 模板
       </button>
       <button onClick={handleExportAll} className="btn btn-secondary">
-        📤 Export All
+        📤 全部导出
       </button>
       <button onClick={() => setShowImport(!showImport)} className="btn btn-secondary">
-        📥 Import
+        📥 导入
       </button>
 
       {showTemplates && (
         <div className="dropdown-panel">
           <div className="panel-header">
-            <h3>Configuration Templates</h3>
+            <h3>配置模板</h3>
             <button onClick={() => setShowTemplates(false)} className="dialog-close">✕</button>
           </div>
           <div className="template-list">
@@ -83,7 +83,7 @@ export function Toolbar() {
                   <code className="template-endpoint">{template.endpoint}</code>
                 </div>
                 <button onClick={() => handleUseTemplate(template)} className="btn btn-primary">
-                  Use
+                  使用
                 </button>
               </div>
             ))}
@@ -94,24 +94,24 @@ export function Toolbar() {
       {showImport && (
         <div className="dropdown-panel">
           <div className="panel-header">
-            <h3>Import Configurations</h3>
+            <h3>导入配置</h3>
             <button onClick={() => setShowImport(false)} className="dialog-close">✕</button>
           </div>
           <div className="import-form">
             <textarea
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
-              placeholder="Paste JSON configuration data here..."
+              placeholder="在此粘贴 JSON 配置数据…"
               rows={10}
               className="import-textarea"
             />
             {importError && <div className="import-error">{importError}</div>}
             <div className="import-actions">
               <button onClick={() => setShowImport(false)} className="btn btn-secondary">
-                Cancel
+                取消
               </button>
               <button onClick={handleImport} disabled={importing} className="btn btn-primary">
-                {importing ? 'Importing...' : 'Import'}
+                {importing ? '导入中…' : '导入'}
               </button>
             </div>
           </div>

@@ -14,7 +14,7 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
 
   const handleAdd = async () => {
     if (!apiKey.trim()) {
-      alert('Please enter an API Key')
+      alert('请输入 API Key')
       return
     }
 
@@ -30,7 +30,7 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
       })
       onClose()
     } catch (error) {
-      alert(`Failed to add config: ${error}`)
+      alert(`添加配置失败：${error}`)
     } finally {
       setIsAdding(false)
     }
@@ -40,13 +40,13 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
     <div className="dialog-overlay" onClick={onClose}>
       <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
-          <h2>Add from Template</h2>
+          <h2>从模板添加</h2>
           <button className="dialog-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="dialog-body">
           <div className="form-group">
-            <label>Template</label>
+            <label>模板</label>
             <select
               value={CONFIG_TEMPLATES.indexOf(selectedTemplate)}
               onChange={(e) => setSelectedTemplate(CONFIG_TEMPLATES[Number(e.target.value)])}
@@ -62,7 +62,7 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
           </div>
 
           <div className="form-group">
-            <label>Endpoint</label>
+            <label>端点</label>
             <input
               type="text"
               value={selectedTemplate.endpoint}
@@ -72,7 +72,7 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
           </div>
 
           <div className="form-group">
-            <label>Model</label>
+            <label>模型</label>
             <input
               type="text"
               value={selectedTemplate.model}
@@ -87,7 +87,7 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
               type="password"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="Enter your API key"
+              placeholder="输入你的 API Key"
               className="form-input"
             />
           </div>
@@ -95,10 +95,10 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
 
         <div className="dialog-footer">
           <button onClick={onClose} className="btn btn-secondary" disabled={isAdding}>
-            Cancel
+            取消
           </button>
           <button onClick={handleAdd} className="btn btn-primary" disabled={isAdding}>
-            {isAdding ? 'Adding...' : 'Add Profile'}
+            {isAdding ? '添加中…' : '添加配置'}
           </button>
         </div>
       </div>

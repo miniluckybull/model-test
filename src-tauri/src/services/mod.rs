@@ -10,7 +10,7 @@ fn build_client() -> Result<Client, String> {
         .connect_timeout(Duration::from_secs(30))
         .timeout(Duration::from_secs(60))
         .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))
+        .map_err(|e| format!("创建 HTTP 客户端失败: {}", e))
 }
 
 pub async fn send_test_request(config: &ApiConfig) -> Result<ModelTestResponse, String> {
@@ -32,14 +32,14 @@ pub async fn send_test_request(config: &ApiConfig) -> Result<ModelTestResponse, 
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("Request failed: {}", e))?;
+        .map_err(|e| format!("请求失败: {}", e))?;
     
     let status = response.status();
     if !status.is_success() {
         let error_text = response
             .text()
             .await
-            .unwrap_or_else(|_| "Unknown error".to_string());
+            .unwrap_or_else(|_| "未知错误".to_string());
         eprintln!("[DEBUG] HTTP Error {}: {}", status.as_u16(), error_text);
         return Err(format!("HTTP {}: {}", status.as_u16(), error_text));
     }
@@ -47,7 +47,7 @@ pub async fn send_test_request(config: &ApiConfig) -> Result<ModelTestResponse, 
     let json: serde_json::Value = response
         .json()
         .await
-        .map_err(|e| format!("Failed to parse response: {}", e))?;
+        .map_err(|e| format!("解析响应失败: {}", e))?;
     
     parse_response(&json, &config.provider)
 }
@@ -119,7 +119,7 @@ fn parse_response(json: &serde_json::Value, provider: &str) -> Result<ModelTestR
     match provider {
         "anthropic" => {
             let usage = json.get("usage")
-                .ok_or_else(|| "Missing usage field".to_string())?;
+                .ok_or_else(|| "缺少 usage 字段".to_string())?;
             let prompt_tokens = usage.get("input_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
             let completion_tokens = usage.get("output_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
             
@@ -141,7 +141,7 @@ fn parse_response(json: &serde_json::Value, provider: &str) -> Result<ModelTestR
         }
         _ => {
             let usage = json.get("usage")
-                .ok_or_else(|| "Missing usage field".to_string())?;
+                .ok_or_else(|| "缺少 usage 字段".to_string())?;
             let prompt_tokens = usage.get("prompt_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
             let completion_tokens = usage.get("completion_tokens").and_then(|v| v.as_u64()).unwrap_or(0);
             

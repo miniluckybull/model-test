@@ -96,6 +96,7 @@ pub fn run() {
             commands::claude::get_claude_config,
             commands::claude::preview_claude_config,
             commands::claude::apply_claude_config,
+            commands::claude::apply_custom_claude_config,
             commands::claude::get_claude_config_path_command,
             commands::claude::export_to_project,
         ])

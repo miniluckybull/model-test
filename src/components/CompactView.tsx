@@ -7,7 +7,7 @@ export default function CompactView() {
   return (
     <div className="compact-view">
       <div className="compact-header">
-        <h1>Model Tester</h1>
+        <h1>模型测试器</h1>
         <span className="compact-count">{configs.length} 个配置</span>
       </div>
       <div className="compact-grid">
