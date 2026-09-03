@@ -1295,7 +1295,7 @@ select.field-input {
 .slider-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .slider-header {
@@ -1316,21 +1316,33 @@ select.field-input {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 4px;
-  background: var(--bg-input);
-  border-radius: var(--radius-sm);
+  height: 16px;
+  background: transparent;
   outline: none;
   cursor: pointer;
+  margin: 2px 0;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(to right,
+    var(--amber) 0,
+    var(--amber) calc(var(--fill, 0) * 1%),
+    var(--bg-input) calc(var(--fill, 0) * 1%),
+    var(--bg-input) 100%);
 }
 
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
+  margin-top: -4px;
   border-radius: 50%;
   background: var(--amber);
-  border: none;
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 0 0 1px var(--amber);
   cursor: pointer;
   transition: var(--transition);
 }
@@ -1339,13 +1351,44 @@ select.field-input {
   background: #ffb733;
 }
 
+.slider::-moz-range-track {
+  height: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+
+.slider::-moz-range-progress {
+  height: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--amber);
+}
+
 .slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   background: var(--amber);
-  border: none;
+  border: 2px solid var(--bg-primary);
   cursor: pointer;
+}
+
+.slider-marks {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  padding: 0 2px;
+}
+
+.slider-mark {
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.slider-mark.active {
+  color: var(--amber);
+  font-weight: 600;
 }
 
 .path-indicator {
