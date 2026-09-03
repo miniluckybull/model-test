@@ -10,12 +10,15 @@ pub struct CreateConfig {
     pub endpoint: String,
     pub model: String,
     pub api_key: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub order: Option<usize>,
 }
 
 #[tauri::command]
 pub fn add_api_config(config: CreateConfig) -> Result<String, String> {
     let id = Uuid::new_v4().to_string();
-    
+
     let new_config = ApiConfig {
         id: id.clone(),
         name: config.name,
@@ -28,12 +31,14 @@ pub fn add_api_config(config: CreateConfig) -> Result<String, String> {
         last_tokens: None,
         last_tested_at: None,
         error_message: None,
+        tags: config.tags,
+        order: config.order,
     };
-    
+
     let mut configs = storage::read_configs()?;
     configs.push(new_config);
     storage::write_configs(&configs)?;
-    
+
     Ok(id)
 }
 
@@ -50,6 +55,8 @@ pub struct ConfigResponse {
     pub last_tokens: Option<u64>,
     pub last_tested_at: Option<String>,
     pub error_message: Option<String>,
+    pub tags: Vec<String>,
+    pub order: Option<usize>,
 }
 
 #[tauri::command]
@@ -67,6 +74,8 @@ pub fn get_all_configs() -> Result<Vec<ConfigResponse>, String> {
         last_tokens: c.last_tokens,
         last_tested_at: c.last_tested_at,
         error_message: c.error_message,
+        tags: c.tags,
+        order: c.order,
     }).collect())
 }
 
@@ -83,6 +92,8 @@ pub struct UpdateConfig {
     pub last_tokens: Option<u64>,
     pub last_tested_at: Option<String>,
     pub error_message: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub order: Option<usize>,
 }
 
 #[tauri::command]
@@ -118,6 +129,12 @@ pub fn update_api_config(update: UpdateConfig) -> Result<(), String> {
             config.last_tested_at = Some(last_tested_at);
         }
         config.error_message = update.error_message;
+        if let Some(tags) = update.tags {
+            config.tags = tags;
+        }
+        if let Some(order) = update.order {
+            config.order = Some(order);
+        }
     } else {
         return Err(format!("Config with id '{}' not found", update.id));
     }

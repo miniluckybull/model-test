@@ -18,6 +18,8 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       endpoint: config.endpoint,
       model: config.model,
       api_key: config.apiKey,
+      tags: config.tags,
+      order: config.order,
     });
 
     set((state) => ({
@@ -43,6 +45,8 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       endpoint: sourceConfig.endpoint,
       model: sourceConfig.model,
       api_key: sourceConfig.apiKey,
+      tags: sourceConfig.tags,
+      order: sourceConfig.order,
     });
 
     set((state) => ({
@@ -77,6 +81,8 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     if (updates.lastTokens !== undefined) backendUpdate.last_tokens = updates.lastTokens;
     if (updates.lastTestedAt !== undefined) backendUpdate.last_tested_at = updates.lastTestedAt;
     if (updates.errorMessage !== undefined) backendUpdate.error_message = updates.errorMessage;
+    if (updates.tags !== undefined) backendUpdate.tags = updates.tags;
+    if (updates.order !== undefined) backendUpdate.order = updates.order;
 
     await updateApiConfig(backendUpdate as any);
 
@@ -128,5 +134,74 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     } catch (error) {
       console.error('Failed to load configs:', error);
     }
+  },
+
+  exportConfigs: (configIds) => {
+    const configs = get().configs;
+    const toExport = configIds
+      ? configs.filter(c => configIds.includes(c.id))
+      : configs;
+
+    // Remove runtime fields and id before export
+    const exportData = toExport.map(({ id, status, lastLatency, lastTokens, lastTestedAt, errorMessage, order, ...rest }) => rest);
+
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `model-configs-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+
+  importConfigs: async (jsonData) => {
+    try {
+      const configs = JSON.parse(jsonData);
+
+      if (!Array.isArray(configs)) {
+        throw new Error('Invalid format: expected an array of configs');
+      }
+
+      for (const config of configs) {
+        if (!config.name || !config.provider || !config.endpoint || !config.model || !config.apiKey) {
+          throw new Error(`Invalid config: missing required fields in "${config.name || 'unnamed'}"`);
+        }
+
+        await get().addConfig({
+          name: config.name,
+          provider: config.provider,
+          endpoint: config.endpoint,
+          model: config.model,
+          apiKey: config.apiKey,
+          tags: config.tags || [],
+          order: config.order,
+        });
+      }
+
+      await get().loadConfigs();
+    } catch (error) {
+      throw new Error(`Import failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  },
+
+  reorderConfigs: async (configIds) => {
+    // Update order field for each config
+    const updates = configIds.map((id, index) =>
+      get().updateConfig(id, { order: index })
+    );
+
+    await Promise.all(updates);
+
+    // Re-sort configs in state
+    set((state) => ({
+      configs: [...state.configs].sort((a, b) => {
+        const aIndex = configIds.indexOf(a.id);
+        const bIndex = configIds.indexOf(b.id);
+        return aIndex - bIndex;
+      })
+    }));
   },
 }));

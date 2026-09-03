@@ -18,6 +18,10 @@ pub struct ApiConfig {
     pub last_tested_at: Option<String>,
     #[serde(default)]
     pub error_message: Option<String>,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    #[serde(default)]
+    pub order: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,6 +69,8 @@ impl Default for ApiConfig {
             last_tokens: None,
             last_tested_at: None,
             error_message: None,
+            tags: Vec::new(),
+            order: None,
         }
     }
 }

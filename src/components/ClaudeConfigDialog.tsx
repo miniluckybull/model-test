@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ApiConfig, ConfigComparison } from '../types'
-import { previewClaudeConfig, applyClaudeConfig, applyCustomClaudeConfig } from '../services/tauriCommands'
+import { ApiConfig, ConfigComparison, ExportToProjectResult } from '../types'
+import { previewClaudeConfig, applyClaudeConfig, applyCustomClaudeConfig, exportToProject } from '../services/tauriCommands'
+import { open } from '@tauri-apps/plugin-dialog'
 
 interface ClaudeConfigDialogProps {
   isOpen: boolean
@@ -17,15 +18,23 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
   const [useCustomPath, setUseCustomPath] = useState(false)
   const [editableConfig, setEditableConfig] = useState('')
   const [isEditing, setIsEditing] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [thinkingMode, setThinkingMode] = useState<'auto' | 'enabled' | 'disabled'>('auto')
+  const [thinkingEffort, setThinkingEffort] = useState<'low' | 'medium' | 'high' | 'xhigh' | 'max'>('high')
+  const [maxTokens, setMaxTokens] = useState<number>(8192)
+  const [showExportDialog, setShowExportDialog] = useState(false)
+  const [projectPath, setProjectPath] = useState('')
+  const [exportResult, setExportResult] = useState<ExportToProjectResult | null>(null)
+  const [exportError, setExportError] = useState<string | null>(null)
 
   const activeConfigPath = useCustomPath && customConfigPath ? customConfigPath : undefined
 
   const loadComparison = useCallback(async () => {
     if (!config) return
-    
+
     setLoading(true)
     setError(null)
-    
+
     try {
       const request = {
         api_key: config.apiKey,
@@ -33,13 +42,16 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
         base_url: config.endpoint,
         model: config.model,
         custom_config_path: activeConfigPath,
+        thinking_mode: thinkingMode,
+        thinking_effort: thinkingEffort,
+        max_tokens: maxTokens > 0 ? maxTokens : undefined,
       }
-      
+
       const result = await previewClaudeConfig(request)
       setComparison(result)
       setEditableConfig(result.new_config_json)
       setIsEditing(false)
-      
+
       if (!useCustomPath && result.config_path) {
         setCustomConfigPath(result.config_path)
       }
@@ -48,7 +60,7 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
     } finally {
       setLoading(false)
     }
-  }, [config, activeConfigPath, useCustomPath])
+  }, [config, activeConfigPath, useCustomPath, thinkingMode, thinkingEffort, maxTokens])
 
   useEffect(() => {
     if (isOpen && config) {
@@ -58,10 +70,10 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
 
   const handleApply = async () => {
     if (!config) return
-    
+
     setLoading(true)
     setError(null)
-    
+
     try {
       if (isEditing) {
         await applyCustomClaudeConfig(editableConfig, activeConfigPath)
@@ -72,12 +84,15 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
           base_url: config.endpoint,
           model: config.model,
           custom_config_path: activeConfigPath,
+          thinking_mode: thinkingMode,
+          thinking_effort: thinkingEffort,
+          max_tokens: maxTokens > 0 ? maxTokens : undefined,
         }
         await applyClaudeConfig(request)
       }
-      
+
       setSuccess(true)
-      
+
       setTimeout(() => {
         onClose()
         setSuccess(false)
@@ -110,6 +125,55 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
       setEditableConfig(comparison.new_config_json)
     }
     setIsEditing(!isEditing)
+  }
+
+  const handleBrowseProject = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: 'Select Project Directory',
+      })
+
+      if (selected && typeof selected === 'string') {
+        setProjectPath(selected)
+      }
+    } catch (err: any) {
+      setExportError(err.toString())
+    }
+  }
+
+  const handleExportToProject = async () => {
+    if (!config || !projectPath) return
+
+    setLoading(true)
+    setExportError(null)
+    setExportResult(null)
+
+    try {
+      const request = {
+        api_key: config.apiKey,
+        auth_token: config.apiKey,
+        base_url: config.endpoint,
+        model: config.model,
+        thinking_mode: thinkingMode,
+        thinking_effort: thinkingEffort,
+        max_tokens: maxTokens > 0 ? maxTokens : undefined,
+      }
+
+      const result = await exportToProject(request, projectPath)
+      setExportResult(result)
+
+      setTimeout(() => {
+        setShowExportDialog(false)
+        setExportResult(null)
+        setProjectPath('')
+      }, 3000)
+    } catch (err: any) {
+      setExportError(err.toString())
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isOpen || !config) return null
@@ -173,6 +237,66 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
               </div>
             )}
           </div>
+
+          {!loading && !success && (
+            <div className="advanced-section">
+              <button
+                className="advanced-toggle"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                <span>{showAdvanced ? '▼' : '▶'}</span>
+                Advanced Settings
+              </button>
+
+              {showAdvanced && (
+                <div className="advanced-fields">
+                  <div className="field-group">
+                    <label className="field-label">Thinking Mode</label>
+                    <select
+                      className="field-select"
+                      value={thinkingMode}
+                      onChange={(e) => setThinkingMode(e.target.value as any)}
+                    >
+                      <option value="auto">Auto (Recommended)</option>
+                      <option value="enabled">Enabled</option>
+                      <option value="disabled">Disabled</option>
+                    </select>
+                    <span className="field-hint">Controls when the model shows reasoning</span>
+                  </div>
+
+                  <div className="field-group">
+                    <label className="field-label">Thinking Effort</label>
+                    <select
+                      className="field-select"
+                      value={thinkingEffort}
+                      onChange={(e) => setThinkingEffort(e.target.value as any)}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High (Default)</option>
+                      <option value="xhigh">Extra High</option>
+                      <option value="max">Maximum</option>
+                    </select>
+                    <span className="field-hint">Depth of reasoning for complex tasks</span>
+                  </div>
+
+                  <div className="field-group">
+                    <label className="field-label">Max Tokens</label>
+                    <input
+                      type="number"
+                      className="field-input"
+                      value={maxTokens}
+                      onChange={(e) => setMaxTokens(parseInt(e.target.value) || 0)}
+                      min="1024"
+                      max="200000"
+                      step="1024"
+                    />
+                    <span className="field-hint">Maximum response length (1024-200000)</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {loading && !comparison && (
             <div className="loading-state">
@@ -256,15 +380,105 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
           <button className="btn btn-secondary" onClick={onClose} disabled={loading}>
             Cancel
           </button>
-          <button 
-            className="btn btn-primary" 
-            onClick={handleApply} 
+          <button
+            className="btn btn-secondary"
+            onClick={() => setShowExportDialog(true)}
+            disabled={loading || success}
+          >
+            Export to Project
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={handleApply}
             disabled={loading || success}
           >
             {loading ? 'Applying...' : success ? 'Applied!' : 'Apply Changes'}
           </button>
         </div>
       </div>
+
+      {showExportDialog && (
+        <div className="dialog-overlay" onClick={() => setShowExportDialog(false)}>
+          <div className="dialog-content export-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="dialog-header">
+              <h2 className="dialog-title">Export to Project</h2>
+              <button className="dialog-close" onClick={() => setShowExportDialog(false)}>x</button>
+            </div>
+
+            <div className="dialog-body">
+              {!exportResult ? (
+                <>
+                  <div className="field-group">
+                    <label className="field-label">Project Directory</label>
+                    <div className="path-input-row">
+                      <input
+                        type="text"
+                        className="field-input"
+                        value={projectPath}
+                        onChange={(e) => setProjectPath(e.target.value)}
+                        placeholder="Select a project directory..."
+                        readOnly
+                      />
+                      <button className="btn btn-secondary" onClick={handleBrowseProject}>
+                        Browse
+                      </button>
+                    </div>
+                    <span className="field-hint">
+                      Configuration will be saved to: {projectPath ? `${projectPath}/.claude/settings.json` : '(select a directory)'}
+                    </span>
+                  </div>
+
+                  {exportError && (
+                    <div className="error-state">
+                      <p className="error-message">{exportError}</p>
+                    </div>
+                  )}
+
+                  <div className="export-info">
+                    <h3 className="section-title">What will be exported:</h3>
+                    <ul className="export-items">
+                      <li><strong>Model:</strong> {config.model}</li>
+                      <li><strong>Endpoint:</strong> {config.endpoint}</li>
+                      <li><strong>Thinking Mode:</strong> {thinkingMode}</li>
+                      <li><strong>Thinking Effort:</strong> {thinkingEffort}</li>
+                      <li><strong>Max Tokens:</strong> {maxTokens}</li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <div className="success-state">
+                  <div className="success-icon">✓</div>
+                  <p>Configuration exported successfully!</p>
+                  <p className="success-detail">
+                    {exportResult.created_directory && 'Created .claude directory and '}
+                    Saved to: <code>{exportResult.config_path}</code>
+                  </p>
+                  <p className="success-hint">
+                    Launch Claude Code in this project directory to use this configuration.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="dialog-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowExportDialog(false)}
+                disabled={loading}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={handleExportToProject}
+                disabled={loading || !projectPath || !!exportResult}
+              >
+                {loading ? 'Exporting...' : 'Export'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useConfigStore } from '../store/configStore'
 import { PROVIDERS } from '../utils/constants'
+import { validateConfig, formatValidationErrors } from '../utils/validation'
 
 interface AddProfileTileProps {
   onAdd?: () => void
@@ -15,25 +16,39 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
   const [endpoint, setEndpoint] = useState('')
   const [model, setModel] = useState('')
   const [apiKey, setApiKey] = useState('')
+  const [validationError, setValidationError] = useState<string | null>(null)
 
   const handleAdd = async () => {
     if (!name || !endpoint || !model || !apiKey) return
 
-    await addConfig({
-      name,
-      provider,
-      endpoint,
-      model,
-      apiKey,
-    })
+    // Validate config
+    const errors = validateConfig(name, endpoint, model, apiKey)
+    if (errors.length > 0) {
+      setValidationError(formatValidationErrors(errors))
+      return
+    }
 
-    setName('')
-    setProvider('openai')
-    setEndpoint('')
-    setModel('')
-    setApiKey('')
-    setIsAdding(false)
-    onAdd?.()
+    try {
+      await addConfig({
+        name,
+        provider,
+        endpoint,
+        model,
+        apiKey,
+        tags: [],
+      })
+
+      setName('')
+      setProvider('openai')
+      setEndpoint('')
+      setModel('')
+      setApiKey('')
+      setIsAdding(false)
+      setValidationError(null)
+      onAdd?.()
+    } catch (error) {
+      setValidationError(`Failed to add config: ${error}`)
+    }
   }
 
   const handleProviderChange = (newProvider: 'openai' | 'anthropic' | 'custom') => {
@@ -123,6 +138,12 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
             onChange={(e) => setApiKey(e.target.value)}
           />
         </div>
+
+        {validationError && (
+          <div className="error-message">
+            {validationError}
+          </div>
+        )}
       </div>
 
       <div className="card-footer">

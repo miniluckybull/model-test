@@ -18,6 +18,9 @@ pub struct ClaudeConfigRequest {
     pub base_url: Option<String>,
     pub model: Option<String>,
     pub custom_config_path: Option<String>,
+    pub thinking_mode: Option<String>,
+    pub thinking_effort: Option<String>,
+    pub max_tokens: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -118,22 +121,15 @@ fn read_claude_config(custom_path: Option<&str>) -> Result<ClaudeConfig, String>
 
 fn write_claude_config(config: &ClaudeConfig, custom_path: Option<&str>) -> Result<String, String> {
     let path = get_claude_config_path(custom_path)?;
-    
+
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .map_err(|e| format!("Failed to create config directory: {}", e))?;
     }
 
-    if path.exists() {
-        let backup_path = path.with_extension(format!("json.backup.{}", 
-            chrono::Utc::now().format("%Y%m%d_%H%M%S")));
-        fs::copy(&path, &backup_path)
-            .map_err(|e| format!("Failed to create backup: {}", e))?;
-    }
-
     let json = serde_json::to_string_pretty(config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
-    
+
     fs::write(&path, json)
         .map_err(|e| format!("Failed to write config file: {}", e))?;
 
@@ -196,19 +192,46 @@ pub fn preview_claude_config(request: ClaudeConfigRequest) -> Result<ConfigCompa
 
     // Build the new config in the same structure as settings.json
     let mut env = serde_json::Map::new();
-    
+
+    // Always set API key
     env.insert("ANTHROPIC_API_KEY".to_string(), serde_json::Value::String(request.api_key.clone()));
-    env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), serde_json::Value::String(request.auth_token.clone()));
-    
+
+    // Only set auth_token if NOT using a custom base_url (third-party proxy)
+    let is_using_proxy = request.base_url.as_ref().map_or(false, |url| {
+        !url.is_empty() && !url.contains("api.anthropic.com")
+    });
+
+    if !is_using_proxy {
+        env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), serde_json::Value::String(request.auth_token.clone()));
+    }
+
     if let Some(base_url) = &request.base_url {
         if !base_url.is_empty() {
             env.insert("ANTHROPIC_BASE_URL".to_string(), serde_json::Value::String(base_url.clone()));
         }
     }
-    
+
     if let Some(model) = &request.model {
         if !model.is_empty() {
             env.insert("ANTHROPIC_MODEL".to_string(), serde_json::Value::String(model.clone()));
+        }
+    }
+
+    if let Some(thinking_mode) = &request.thinking_mode {
+        if !thinking_mode.is_empty() {
+            env.insert("ANTHROPIC_THINKING_MODE".to_string(), serde_json::Value::String(thinking_mode.clone()));
+        }
+    }
+
+    if let Some(thinking_effort) = &request.thinking_effort {
+        if !thinking_effort.is_empty() {
+            env.insert("ANTHROPIC_THINKING_EFFORT".to_string(), serde_json::Value::String(thinking_effort.clone()));
+        }
+    }
+
+    if let Some(max_tokens) = request.max_tokens {
+        if max_tokens > 0 {
+            env.insert("ANTHROPIC_MAX_TOKENS".to_string(), serde_json::Value::String(max_tokens.to_string()));
         }
     }
 
@@ -238,9 +261,21 @@ pub fn apply_claude_config(request: ClaudeConfigRequest) -> Result<String, Strin
     let path_ref = request.custom_config_path.as_deref().filter(|s| !s.is_empty());
     let mut config = read_claude_config(path_ref)?;
 
-    config.env.insert("ANTHROPIC_API_KEY".to_string(), request.api_key);
-    config.env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), request.auth_token);
-    
+    // Always set API key
+    config.env.insert("ANTHROPIC_API_KEY".to_string(), request.api_key.clone());
+
+    // Only set auth_token if NOT using a custom base_url (third-party proxy)
+    let is_using_proxy = request.base_url.as_ref().map_or(false, |url| {
+        !url.is_empty() && !url.contains("api.anthropic.com")
+    });
+
+    if !is_using_proxy {
+        config.env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), request.auth_token);
+    } else {
+        // Remove auth_token if switching to proxy mode
+        config.env.remove("ANTHROPIC_AUTH_TOKEN");
+    }
+
     if let Some(base_url) = request.base_url {
         if !base_url.is_empty() {
             config.env.insert("ANTHROPIC_BASE_URL".to_string(), base_url);
@@ -260,6 +295,30 @@ pub fn apply_claude_config(request: ClaudeConfigRequest) -> Result<String, Strin
         }
     }
 
+    if let Some(thinking_mode) = request.thinking_mode {
+        if !thinking_mode.is_empty() {
+            config.env.insert("ANTHROPIC_THINKING_MODE".to_string(), thinking_mode);
+        } else {
+            config.env.remove("ANTHROPIC_THINKING_MODE");
+        }
+    }
+
+    if let Some(thinking_effort) = request.thinking_effort {
+        if !thinking_effort.is_empty() {
+            config.env.insert("ANTHROPIC_THINKING_EFFORT".to_string(), thinking_effort);
+        } else {
+            config.env.remove("ANTHROPIC_THINKING_EFFORT");
+        }
+    }
+
+    if let Some(max_tokens) = request.max_tokens {
+        if max_tokens > 0 {
+            config.env.insert("ANTHROPIC_MAX_TOKENS".to_string(), max_tokens.to_string());
+        } else {
+            config.env.remove("ANTHROPIC_MAX_TOKENS");
+        }
+    }
+
     let config_path = write_claude_config(&config, path_ref)?;
 
     Ok(config_path)
@@ -276,10 +335,10 @@ pub fn get_claude_config_path_command(custom_config_path: Option<String>) -> Res
 pub fn apply_custom_claude_config(config_json: String, custom_config_path: Option<String>) -> Result<String, String> {
     let path_ref = custom_config_path.as_deref().filter(|s| !s.is_empty());
     let mut config = read_claude_config(path_ref)?;
-    
+
     let custom_config: serde_json::Value = serde_json::from_str(&config_json)
         .map_err(|e| format!("Failed to parse config JSON: {}", e))?;
-    
+
     if let Some(env) = custom_config.get("env").and_then(|v| v.as_object()) {
         for (key, value) in env {
             if let Some(val_str) = value.as_str() {
@@ -287,7 +346,7 @@ pub fn apply_custom_claude_config(config_json: String, custom_config_path: Optio
             }
         }
     }
-    
+
     if let Some(obj) = custom_config.as_object() {
         for (key, value) in obj {
             if key != "env" && key != "model" {
@@ -297,7 +356,7 @@ pub fn apply_custom_claude_config(config_json: String, custom_config_path: Optio
             }
         }
     }
-    
+
     if let Some(model) = custom_config.get("model").and_then(|v| v.as_str()) {
         config.model = Some(model.to_string());
     }
@@ -305,4 +364,98 @@ pub fn apply_custom_claude_config(config_json: String, custom_config_path: Optio
     let config_path = write_claude_config(&config, path_ref)?;
 
     Ok(config_path)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExportToProjectResult {
+    pub config_path: String,
+    pub created_directory: bool,
+}
+
+/// Export configuration to a specific project directory
+#[tauri::command]
+pub fn export_to_project(
+    request: ClaudeConfigRequest,
+    project_path: String,
+) -> Result<ExportToProjectResult, String> {
+    // Validate project path
+    let project_dir = PathBuf::from(&project_path);
+    if !project_dir.exists() {
+        return Err(format!("Project directory does not exist: {}", project_path));
+    }
+
+    if !project_dir.is_dir() {
+        return Err(format!("Path is not a directory: {}", project_path));
+    }
+
+    // Create .claude directory if it doesn't exist
+    let claude_dir = project_dir.join(".claude");
+    let created_directory = !claude_dir.exists();
+
+    if created_directory {
+        fs::create_dir_all(&claude_dir)
+            .map_err(|e| format!("Failed to create .claude directory: {}", e))?;
+    }
+
+    // Build config
+    let mut config = ClaudeConfig {
+        env: HashMap::new(),
+        model: None,
+    };
+
+    // Set API key
+    config.env.insert("ANTHROPIC_API_KEY".to_string(), request.api_key.clone());
+
+    // Handle auth_token based on proxy usage
+    let is_using_proxy = request.base_url.as_ref().map_or(false, |url| {
+        !url.is_empty() && !url.contains("api.anthropic.com")
+    });
+
+    if !is_using_proxy {
+        config.env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), request.auth_token.clone());
+    }
+
+    if let Some(base_url) = &request.base_url {
+        if !base_url.is_empty() {
+            config.env.insert("ANTHROPIC_BASE_URL".to_string(), base_url.clone());
+        }
+    }
+
+    if let Some(model) = &request.model {
+        if !model.is_empty() {
+            config.env.insert("ANTHROPIC_MODEL".to_string(), model.clone());
+            config.model = Some(model.clone());
+        }
+    }
+
+    if let Some(thinking_mode) = &request.thinking_mode {
+        if !thinking_mode.is_empty() {
+            config.env.insert("ANTHROPIC_THINKING_MODE".to_string(), thinking_mode.clone());
+        }
+    }
+
+    if let Some(thinking_effort) = &request.thinking_effort {
+        if !thinking_effort.is_empty() {
+            config.env.insert("ANTHROPIC_THINKING_EFFORT".to_string(), thinking_effort.clone());
+        }
+    }
+
+    if let Some(max_tokens) = request.max_tokens {
+        if max_tokens > 0 {
+            config.env.insert("ANTHROPIC_MAX_TOKENS".to_string(), max_tokens.to_string());
+        }
+    }
+
+    // Write to project's .claude/settings.json
+    let config_path = claude_dir.join("settings.json");
+    let json = serde_json::to_string_pretty(&config)
+        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+
+    fs::write(&config_path, json)
+        .map_err(|e| format!("Failed to write config file: {}", e))?;
+
+    Ok(ExportToProjectResult {
+        config_path: config_path.to_string_lossy().to_string(),
+        created_directory,
+    })
 }
