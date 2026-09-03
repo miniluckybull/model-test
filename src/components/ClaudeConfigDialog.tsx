@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ApiConfig, ConfigComparison, ExportToProjectResult } from '../types'
 import { previewClaudeConfig, applyClaudeConfig, applyCustomClaudeConfig, exportToProject } from '../services/tauriCommands'
-import { open } from '@tauri-apps/plugin-dialog'
+import { open, save } from '@tauri-apps/plugin-dialog'
 
 interface ClaudeConfigDialogProps {
   isOpen: boolean
@@ -116,13 +116,13 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
 
   const handleBrowseConfigFile = async () => {
     try {
-      const selected = await open({
-        title: '选择配置文件',
-        multiple: false,
+      const selected = await save({
+        title: '选择配置文件位置（可新建或覆盖）',
+        defaultPath: comparison?.config_path,
         filters: [{ name: 'JSON', extensions: ['json'] }],
       })
 
-      if (selected && typeof selected === 'string') {
+      if (selected) {
         setSelectedPath(selected)
       }
     } catch (err: any) {
@@ -245,7 +245,7 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
                   >
                     <span className="path-radio-dot">{isCustomPath ? '●' : '○'}</span>
                     <span className="path-indicator">📂</span>
-                    <span className="path-text">{isCustomPath ? selectedPath : '自定义路径…'}</span>
+                    <span className="path-text">{isCustomPath ? selectedPath : '自定义路径（选择或新建）…'}</span>
                     <button
                       type="button"
                       className="btn btn-secondary"
