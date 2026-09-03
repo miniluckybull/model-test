@@ -3,10 +3,12 @@ use serde_json::json;
 use std::time::Duration;
 use crate::models::{ApiConfig, ModelTestResponse};
 
+pub mod keyring;
+
 fn build_client() -> Result<Client, String> {
     Client::builder()
         .connect_timeout(Duration::from_secs(30))
-        .read_timeout(Duration::from_secs(60))
+        .timeout(Duration::from_secs(60))
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {}", e))
 }

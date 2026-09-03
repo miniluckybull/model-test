@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { ApiConfig, ClaudeConfigRequest, ConfigComparison } from '../types';
+import { ApiConfig, ClaudeConfigRequest, ConfigComparison, ExportToProjectResult } from '../types';
 
 interface CreateConfigPayload {
   name: string;
@@ -7,6 +7,8 @@ interface CreateConfigPayload {
   endpoint: string;
   model: string;
   api_key: string;
+  tags?: string[];
+  order?: number;
 }
 
 interface UpdateConfigPayload {
@@ -21,6 +23,8 @@ interface UpdateConfigPayload {
   last_tokens?: number;
   last_tested_at?: string;
   error_message?: string;
+  tags?: string[];
+  order?: number;
 }
 
 interface BackendConfig {
@@ -35,6 +39,8 @@ interface BackendConfig {
   last_tokens?: number;
   last_tested_at?: string;
   error_message?: string;
+  tags: string[];
+  order?: number;
 }
 
 export async function addApiConfig(config: CreateConfigPayload): Promise<string> {
@@ -78,6 +84,10 @@ export async function applyCustomClaudeConfig(configJson: string, customConfigPa
   return invoke<string>('apply_custom_claude_config', { configJson, customConfigPath });
 }
 
+export async function exportToProject(request: ClaudeConfigRequest, projectPath: string): Promise<ExportToProjectResult> {
+  return invoke<ExportToProjectResult>('export_to_project', { request, projectPath });
+}
+
 export function mapBackendConfig(backend: BackendConfig): ApiConfig {
   return {
     id: backend.id,
@@ -91,5 +101,7 @@ export function mapBackendConfig(backend: BackendConfig): ApiConfig {
     lastTokens: backend.last_tokens,
     lastTestedAt: backend.last_tested_at,
     errorMessage: backend.error_message,
+    tags: backend.tags,
+    order: backend.order,
   };
 }

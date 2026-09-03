@@ -10,6 +10,12 @@ pub struct TestModelRequest {
     pub config_id: String,
 }
 
+#[derive(Deserialize)]
+pub struct BatchTestRequest {
+    pub config_ids: Vec<String>,
+    pub max_concurrent: Option<usize>,
+}
+
 #[tauri::command]
 pub async fn test_model(
     app: tauri::AppHandle,
@@ -17,11 +23,11 @@ pub async fn test_model(
 ) -> Result<(), String> {
     let config = storage::find_config(&config_id)?
         .ok_or_else(|| format!("Config with id '{}' not found", config_id))?;
-    
+
     let start = Instant::now();
     let result = services::send_test_request(&config).await;
     let elapsed = start.elapsed();
-    
+
     let test_result = match result {
         Ok(response) => {
             TestResult {
@@ -50,8 +56,39 @@ pub async fn test_model(
             }
         }
     };
-    
+
     let _ = app.emit("test-complete", &test_result);
-    
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn batch_test_models(
+    app: tauri::AppHandle,
+    config_ids: Vec<String>,
+    max_concurrent: Option<usize>,
+) -> Result<(), String> {
+    use futures::stream::{self, StreamExt};
+
+    let concurrent_limit = max_concurrent.unwrap_or(3).min(5); // Max 5 concurrent
+
+    let _ = app.emit("batch-test-started", serde_json::json!({
+        "total": config_ids.len(),
+        "concurrent": concurrent_limit,
+    }));
+
+    stream::iter(config_ids)
+        .map(|config_id| {
+            let app = app.clone();
+            async move {
+                let _ = test_model(app, config_id).await;
+            }
+        })
+        .buffer_unordered(concurrent_limit)
+        .collect::<Vec<_>>()
+        .await;
+
+    let _ = app.emit("batch-test-complete", serde_json::json!({}));
+
     Ok(())
 }

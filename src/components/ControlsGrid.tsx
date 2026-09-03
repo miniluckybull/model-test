@@ -1,14 +1,23 @@
-import { useConfigStore } from '../store/configStore'
-import ProfileCard from './ProfileCard'
+import { ApiConfig } from '../types'
+import { SelectableProfileCard } from './SelectableProfileCard'
 import AddProfileTile from './AddProfileTile'
 
-function ControlsGrid() {
-  const configs = useConfigStore((state) => state.configs)
+interface ControlsGridProps {
+  filteredConfigs: ApiConfig[]
+  selectedIds: string[]
+  onToggleSelect: (id: string) => void
+}
 
+function ControlsGrid({ filteredConfigs, selectedIds, onToggleSelect }: ControlsGridProps) {
   return (
     <div className="controls-grid">
-      {configs.map((config) => (
-        <ProfileCard key={config.id} config={config} />
+      {filteredConfigs.map((config) => (
+        <SelectableProfileCard
+          key={config.id}
+          config={config}
+          isSelected={selectedIds.includes(config.id)}
+          onToggleSelect={onToggleSelect}
+        />
       ))}
       <AddProfileTile />
     </div>

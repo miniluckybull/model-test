@@ -80,6 +80,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             storage::init(app.handle())?;
             start_auto_test_timer(app.handle().clone());
@@ -91,10 +92,12 @@ pub fn run() {
             commands::config::update_api_config,
             commands::config::delete_api_config,
             commands::test::test_model,
+            commands::test::batch_test_models,
             commands::claude::get_claude_config,
             commands::claude::preview_claude_config,
             commands::claude::apply_claude_config,
             commands::claude::get_claude_config_path_command,
+            commands::claude::export_to_project,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

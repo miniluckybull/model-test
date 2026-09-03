@@ -10,6 +10,8 @@ export interface ApiConfig {
   lastTokens?: number;
   lastTestedAt?: string;
   errorMessage?: string;
+  tags?: string[];
+  order?: number;
 }
 
 export interface TestResult {
@@ -35,6 +37,9 @@ export interface ClaudeConfigRequest {
   base_url?: string;
   model?: string;
   custom_config_path?: string;
+  thinking_mode?: 'auto' | 'enabled' | 'disabled';
+  thinking_effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  max_tokens?: number;
 }
 
 export interface ConfigComparison {
@@ -43,6 +48,11 @@ export interface ConfigComparison {
   config_path: string;
   current_config_json: string;
   detected_paths: string[];
+}
+
+export interface ExportToProjectResult {
+  config_path: string;
+  created_directory: boolean;
 }
 
 export interface ConfigStore {
@@ -54,4 +64,20 @@ export interface ConfigStore {
   setConfigStatus: (id: string, status: ApiConfig['status']) => void;
   updateTestResult: (id: string, result: TestResult) => void;
   loadConfigs: () => Promise<void>;
+  exportConfigs: (configIds?: string[]) => void;
+  importConfigs: (jsonData: string) => Promise<void>;
+  reorderConfigs: (configIds: string[]) => Promise<void>;
+}
+
+export interface ConfigTemplate {
+  name: string;
+  provider: 'anthropic' | 'openai' | 'custom';
+  endpoint: string;
+  model: string;
+  description: string;
+}
+
+export interface ValidationError {
+  field: string;
+  message: string;
 }
