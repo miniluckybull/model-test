@@ -275,7 +275,13 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
                     step={1}
                     value={modeIdx}
                     onChange={(e) => setThinkingMode(THINKING_MODES[Number(e.target.value)])}
+                    style={{ ['--fill' as any]: (modeIdx / 2) * 100 }}
                   />
+                  <div className="slider-marks">
+                    {THINKING_MODE_LABELS.map((label, i) => (
+                      <span key={i} className={`slider-mark ${i === modeIdx ? 'active' : ''}`}>{label}</span>
+                    ))}
+                  </div>
                   <span className="field-hint">控制模型何时展示推理过程</span>
                 </div>
 
@@ -292,7 +298,13 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
                     step={1}
                     value={effortIdx}
                     onChange={(e) => setThinkingEffort(THINKING_EFFORTS[Number(e.target.value)])}
+                    style={{ ['--fill' as any]: (effortIdx / 4) * 100 }}
                   />
+                  <div className="slider-marks">
+                    {THINKING_EFFORT_LABELS.map((label, i) => (
+                      <span key={i} className={`slider-mark ${i === effortIdx ? 'active' : ''}`}>{label}</span>
+                    ))}
+                  </div>
                   <span className="field-hint">复杂任务的推理深度</span>
                 </div>
 
@@ -309,7 +321,13 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
                     step={1024}
                     value={maxTokens}
                     onChange={(e) => setMaxTokens(Number(e.target.value))}
+                    style={{ ['--fill' as any]: ((maxTokens - 1024) / (200000 - 1024)) * 100 }}
                   />
+                  <div className="slider-marks">
+                    <span className="slider-mark">1024</span>
+                    <span className="slider-mark">{maxTokens}</span>
+                    <span className="slider-mark">200000</span>
+                  </div>
                   <span className="field-hint">最大响应长度（1024-200000）</span>
                 </div>
               </div>
