@@ -2,7 +2,7 @@
 
 本地开发模型资源检测工具，支持多 API 配置管理和实时连通性测试。
 
-![Model Tester](https://img.shields.io/badge/version-0.1.0-blue)
+![Model Tester](https://img.shields.io/badge/version-0.2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey)
 
@@ -12,6 +12,9 @@
 - **实时连通性测试** - 测试 OpenAI / Anthropic 兼容接口的连通性
 - **延迟与 Token 统计** - 显示响应时间和 token 使用量
 - **批量测试** - 一键测试所有配置的 API
+- **项目级配置导出** - 将配置导出到项目 .claude 目录，支持多窗口不同配置
+- **高级配置参数** - 支持 thinking_mode、thinking_effort、max_tokens 等高级设置
+- **配置管理增强** - 导入导出、标签过滤、统计面板等批量操作
 - **配置复制** - 快速复制配置并修改，方便多模型对比
 - **暗色主题 UI** - 专业级深色设计，支持响应式布局
 - **本地持久化** - 配置自动保存到本地文件系统
