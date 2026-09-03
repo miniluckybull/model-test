@@ -162,7 +162,7 @@ body {
 .success-detail code {
   background: var(--bg-input);
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-mono);
   font-size: 12px;
   color: var(--amber);
@@ -444,11 +444,11 @@ body {
 .field-input {
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   transition: var(--transition);
   width: 100%;
 }
@@ -738,7 +738,7 @@ select.field-input {
   align-items: center;
   gap: 4px;
   padding: 3px 6px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   font-size: 8px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1290,7 +1290,7 @@ select.field-input {
   color: #0a0c0f;
   font-size: 8px;
   font-weight: 600;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   text-transform: uppercase;
 }
 
@@ -1347,9 +1347,9 @@ select.field-input {
   padding: 12px;
   background: var(--bg-input);
   border: 1px solid var(--blue);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.6;
   color: var(--text-primary);
   resize: vertical;
@@ -1427,11 +1427,6 @@ select.field-input {
   to {
     opacity: 1;
   }
-}
-
-.error-message {
-  color: var(--red);
-  margin-bottom: 16px;
 }
 
 .success-icon {
@@ -1520,11 +1515,11 @@ select.field-input {
 .field-select {
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 6px 8px;
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   transition: var(--transition);
   width: 100%;
   cursor: pointer;
@@ -1670,10 +1665,10 @@ select.field-input {
   padding: 12px;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.5;
   resize: vertical;
   transition: var(--transition);
@@ -1717,7 +1712,7 @@ select.field-input {
   padding: 8px 12px;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 12px;
@@ -1843,24 +1838,6 @@ select.field-input {
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-.import-textarea {
-  width: 100%;
-  padding: 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  resize: vertical;
-  min-height: 200px;
-}
-
-.import-textarea:focus {
-  outline: none;
-  border-color: var(--amber);
 }
 
 .import-error {
@@ -1991,10 +1968,10 @@ select.field-input {
   padding: 10px 36px 10px 12px;
   background: var(--bg-input);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 12px;
   transition: var(--transition);
 }
 
