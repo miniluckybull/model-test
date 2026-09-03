@@ -51,39 +51,39 @@ export function StatisticsPanel() {
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-value">{stats.total}</div>
+          <div className="stat-value-lg">{stats.total}</div>
           <div className="stat-label">Total Configs</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-value stat-ok">{stats.ok}</div>
+          <div className="stat-value-lg stat-ok">{stats.ok}</div>
           <div className="stat-label">Available</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-value stat-failed">{stats.failed}</div>
+          <div className="stat-value-lg stat-failed">{stats.failed}</div>
           <div className="stat-label">Failed</div>
         </div>
 
         <div className="stat-card">
-          <div className="stat-value">{stats.successRate}%</div>
+          <div className="stat-value-lg">{stats.successRate}%</div>
           <div className="stat-label">Success Rate</div>
         </div>
 
         {stats.avgLatency > 0 && (
           <>
             <div className="stat-card">
-              <div className="stat-value">{stats.avgLatency}ms</div>
+              <div className="stat-value-lg">{stats.avgLatency}ms</div>
               <div className="stat-label">Avg Latency</div>
             </div>
 
             <div className="stat-card">
-              <div className="stat-value stat-ok">{stats.fastestLatency}ms</div>
+              <div className="stat-value-lg stat-ok">{stats.fastestLatency}ms</div>
               <div className="stat-label">Fastest</div>
             </div>
 
             <div className="stat-card">
-              <div className="stat-value stat-failed">{stats.slowestLatency}ms</div>
+              <div className="stat-value-lg stat-failed">{stats.slowestLatency}ms</div>
               <div className="stat-label">Slowest</div>
             </div>
           </>

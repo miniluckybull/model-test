@@ -41,7 +41,7 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
       <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <h2>Add from Template</h2>
-          <button className="close-button" onClick={onClose}>✕</button>
+          <button className="dialog-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="dialog-body">
@@ -94,10 +94,10 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
         </div>
 
         <div className="dialog-footer">
-          <button onClick={onClose} className="button-secondary" disabled={isAdding}>
+          <button onClick={onClose} className="btn btn-secondary" disabled={isAdding}>
             Cancel
           </button>
-          <button onClick={handleAdd} className="button-primary" disabled={isAdding}>
+          <button onClick={handleAdd} className="btn btn-primary" disabled={isAdding}>
             {isAdding ? 'Adding...' : 'Add Profile'}
           </button>
         </div>

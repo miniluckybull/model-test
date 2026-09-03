@@ -26,6 +26,7 @@
   --font-display: 'Syne', sans-serif;
 
   --transition: all 0.15s ease;
+  --radius-sm: 4px;
   --radius: 8px;
   --radius-lg: 12px;
 }
@@ -642,11 +643,11 @@ select.field-input {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 6px 10px;
+  padding: 7px 12px;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -666,6 +667,7 @@ select.field-input {
 
 .btn-primary:hover:not(:disabled) {
   background: #ffb733;
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
@@ -677,6 +679,8 @@ select.field-input {
 .btn-secondary:hover:not(:disabled) {
   border-color: var(--amber);
   color: var(--amber);
+  background: var(--amber-dim);
+  transform: translateY(-1px);
 }
 
 .btn-success {
@@ -686,6 +690,7 @@ select.field-input {
 
 .btn-success:hover:not(:disabled) {
   background: #00ff88;
+  transform: translateY(-1px);
 }
 
 .btn-danger {
@@ -695,11 +700,7 @@ select.field-input {
 
 .btn-danger:hover:not(:disabled) {
   background: #ff6666;
-}
-
-.btn-icon {
-  padding: 6px;
-  min-width: 24px;
+  transform: translateY(-1px);
 }
 
 .btn-test:hover:not(:disabled) {
@@ -1761,39 +1762,6 @@ select.field-input {
   position: relative;
 }
 
-.toolbar-btn {
-  padding: 8px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.toolbar-btn:hover {
-  border-color: var(--border-bright);
-  background: var(--bg-input);
-}
-
-.stats-toggle-btn {
-  padding: 8px 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.stats-toggle-btn:hover {
-  border-color: var(--amber);
-}
-
 /* Dropdown Panel */
 .dropdown-panel {
   position: absolute;
@@ -1821,20 +1789,6 @@ select.field-input {
   font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-primary);
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  color: var(--text-secondary);
-  cursor: pointer;
-  font-size: 18px;
-  padding: 4px;
-  transition: var(--transition);
-}
-
-.close-btn:hover {
   color: var(--text-primary);
 }
 
@@ -1884,25 +1838,6 @@ select.field-input {
   display: inline-block;
 }
 
-.use-template-btn {
-  padding: 6px 12px;
-  background: var(--amber);
-  border: none;
-  border-radius: 6px;
-  color: var(--bg-primary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  white-space: nowrap;
-}
-
-.use-template-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
 /* Import Form */
 .import-form {
   display: flex;
@@ -1943,45 +1878,6 @@ select.field-input {
   gap: 8px;
 }
 
-.import-btn {
-  padding: 8px 16px;
-  background: var(--amber);
-  border: none;
-  border-radius: var(--radius);
-  color: var(--bg-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.import-btn:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.import-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.cancel-btn {
-  padding: 8px 16px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.cancel-btn:hover {
-  border-color: var(--border-bright);
-  color: var(--text-primary);
-}
-
 /* Statistics Panel */
 .statistics-panel {
   background: var(--bg-card);
@@ -1993,7 +1889,7 @@ select.field-input {
 
 .statistics-panel h3 {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   margin-bottom: 16px;
   color: var(--text-primary);
@@ -2014,7 +1910,7 @@ select.field-input {
   text-align: center;
 }
 
-.stat-value {
+.stat-value-lg {
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 700;
@@ -2023,11 +1919,11 @@ select.field-input {
   margin-bottom: 4px;
 }
 
-.stat-value.stat-ok {
+.stat-value-lg.stat-ok {
   color: var(--green);
 }
 
-.stat-value.stat-failed {
+.stat-value-lg.stat-failed {
   color: var(--red);
 }
 
@@ -2134,22 +2030,6 @@ select.field-input {
   position: relative;
 }
 
-.tag-filter-btn {
-  padding: 8px 16px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.tag-filter-btn:hover {
-  border-color: var(--border-bright);
-}
-
 .tag-dropdown {
   position: absolute;
   top: 100%;
@@ -2237,7 +2117,7 @@ select.field-input {
   padding: 4px 8px;
   background: var(--amber-dim);
   border: 1px solid var(--amber);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   color: var(--amber);
   font-size: 11px;
   font-weight: 500;
@@ -2261,156 +2141,6 @@ select.field-input {
   margin-bottom: 16px;
   font-size: 12px;
   color: var(--text-secondary);
-}
-
-/* Config Editor */
-.config-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.editor-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.editor-field label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.editor-field input,
-.editor-field select {
-  padding: 10px 12px;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  transition: var(--transition);
-}
-
-.editor-field input:focus,
-.editor-field select:focus {
-  outline: none;
-  border-color: var(--amber);
-}
-
-/* Tags Editor */
-.tags-editor {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  min-height: 32px;
-}
-
-.tag-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background: var(--amber-dim);
-  border: 1px solid var(--amber);
-  border-radius: 6px;
-  color: var(--amber);
-  font-size: 11px;
-  font-weight: 500;
-}
-
-.tag-remove {
-  background: none;
-  border: none;
-  color: var(--amber);
-  cursor: pointer;
-  font-size: 14px;
-  padding: 0;
-  line-height: 1;
-}
-
-.tag-remove:hover {
-  opacity: 0.7;
-}
-
-.tag-input-group {
-  display: flex;
-  gap: 8px;
-}
-
-.tag-input-group input {
-  flex: 1;
-}
-
-.add-tag-btn {
-  padding: 8px 16px;
-  background: var(--amber);
-  border: none;
-  border-radius: var(--radius);
-  color: var(--bg-primary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-  white-space: nowrap;
-}
-
-.add-tag-btn:hover {
-  opacity: 0.9;
-}
-
-/* Validation Errors */
-.validation-errors {
-  padding: 12px;
-  background: var(--red-dim);
-  border: 1px solid var(--red);
-  border-radius: var(--radius);
-  color: var(--red);
-  font-size: 12px;
-  white-space: pre-line;
-}
-
-/* Editor Actions */
-.editor-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
-
-.save-btn {
-  padding: 10px 20px;
-  background: var(--amber);
-  border: none;
-  border-radius: var(--radius);
-  color: var(--bg-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.save-btn:hover:not(:disabled) {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-.save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 /* Batch Actions Bar */
@@ -2452,50 +2182,6 @@ select.field-input {
   font-weight: 600;
 }
 
-.batch-test-btn,
-.batch-delete-btn,
-.deselect-btn {
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.batch-test-btn {
-  background: var(--amber);
-  color: var(--bg-primary);
-  border-color: var(--amber);
-  font-weight: 600;
-}
-
-.batch-test-btn:hover {
-  opacity: 0.9;
-}
-
-.batch-delete-btn {
-  background: var(--red-dim);
-  color: var(--red);
-  border-color: var(--red);
-}
-
-.batch-delete-btn:hover {
-  background: var(--red);
-  color: var(--bg-primary);
-}
-
-.deselect-btn {
-  background: var(--bg-input);
-  color: var(--text-secondary);
-}
-
-.deselect-btn:hover {
-  border-color: var(--border-bright);
-  color: var(--text-primary);
-}
-
 /* Batch Test Panel */
 .batch-test-panel {
   position: fixed;
@@ -2522,24 +2208,6 @@ select.field-input {
 .batch-test-prompt p {
   color: var(--text-secondary);
   margin-bottom: 20px;
-}
-
-.start-batch-btn {
-  padding: 12px 24px;
-  background: var(--amber);
-  border: none;
-  border-radius: var(--radius);
-  color: var(--bg-primary);
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.start-batch-btn:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
 }
 
 .batch-test-progress {
@@ -2589,23 +2257,6 @@ select.field-input {
 .batch-test-complete p {
   color: var(--text-secondary);
   margin-bottom: 20px;
-}
-
-.close-complete-btn {
-  padding: 10px 20px;
-  background: var(--amber);
-  border: none;
-  border-radius: var(--radius);
-  color: var(--bg-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: var(--transition);
-}
-
-.close-complete-btn:hover {
-  opacity: 0.9;
 }
 
 /* Profile Card Selection */

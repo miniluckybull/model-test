@@ -78,7 +78,7 @@ function App() {
           <Toolbar />
           <button
             onClick={() => setShowStats(!showStats)}
-            className="stats-toggle-btn"
+            className="btn btn-secondary"
           >
             {showStats ? '📊 Hide Stats' : '📊 Show Stats'}
           </button>
@@ -113,13 +113,13 @@ function App() {
             {selectedIds.length > 0 && (
               <div className="batch-actions">
                 <span className="selected-count">{selectedIds.length} selected</span>
-                <button onClick={handleBatchTest} className="batch-test-btn">
+                <button onClick={handleBatchTest} className="btn btn-primary">
                   🧪 Batch Test
                 </button>
-                <button onClick={handleBatchDelete} className="batch-delete-btn">
+                <button onClick={handleBatchDelete} className="btn btn-danger">
                   🗑️ Delete
                 </button>
-                <button onClick={() => setSelectedIds([])} className="deselect-btn">
+                <button onClick={() => setSelectedIds([])} className="btn btn-secondary">
                   Clear
                 </button>
               </div>

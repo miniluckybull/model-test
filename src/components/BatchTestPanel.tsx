@@ -51,14 +51,14 @@ export function BatchTestPanel({ selectedIds, onClose }: BatchTestPanelProps) {
     <div className="batch-test-panel">
       <div className="panel-header">
         <h3>Batch Test {selectedIds.length} Configurations</h3>
-        <button onClick={onClose} className="close-btn">✕</button>
+        <button onClick={onClose} className="dialog-close">✕</button>
       </div>
 
       <div className="batch-test-content">
         {!testing && completed === 0 && (
           <div className="batch-test-prompt">
             <p>Test {selectedIds.length} configurations simultaneously</p>
-            <button onClick={handleBatchTest} className="start-batch-btn">
+            <button onClick={handleBatchTest} className="btn btn-primary">
               Start Batch Test
             </button>
           </div>
@@ -83,7 +83,7 @@ export function BatchTestPanel({ selectedIds, onClose }: BatchTestPanelProps) {
           <div className="batch-test-complete">
             <div className="complete-icon">✓</div>
             <p>Batch test complete: {completed} / {total} tested</p>
-            <button onClick={onClose} className="close-complete-btn">
+            <button onClick={onClose} className="btn btn-primary">
               Close
             </button>
           </div>

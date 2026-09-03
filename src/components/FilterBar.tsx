@@ -46,7 +46,7 @@ export function FilterBar({ searchQuery, onSearchChange, selectedTags, onTagsCha
         <div className="tag-filter">
           <button
             onClick={() => setShowTagFilter(!showTagFilter)}
-            className="tag-filter-btn"
+            className="btn btn-secondary"
           >
             🏷️ Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
           </button>

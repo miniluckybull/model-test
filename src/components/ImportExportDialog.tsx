@@ -85,7 +85,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
       <div className="dialog-content dialog-large" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <h2>Import / Export Configs</h2>
-          <button className="close-button" onClick={onClose}>✕</button>
+          <button className="dialog-close" onClick={onClose}>✕</button>
         </div>
 
         <div className="dialog-body">
@@ -94,12 +94,12 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
             <h3>Export Configs</h3>
 
             <div className="export-actions">
-              <button onClick={handleExportAll} className="button-secondary">
+              <button onClick={handleExportAll} className="btn btn-secondary">
                 Export All ({configs.length})
               </button>
               <button
                 onClick={handleExportSelected}
-                className="button-secondary"
+                className="btn btn-secondary"
                 disabled={selectedIds.length === 0}
               >
                 Export Selected ({selectedIds.length})
@@ -141,7 +141,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
             <h3>Import Configs</h3>
 
             <div className="import-file-input">
-              <label className="button-secondary" style={{ cursor: 'pointer' }}>
+              <label className="btn btn-secondary" style={{ cursor: 'pointer' }}>
                 Choose JSON File
                 <input
                   type="file"
@@ -184,7 +184,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
 
             <button
               onClick={handleImport}
-              className="button-primary"
+              className="btn btn-primary"
               disabled={isImporting || !importText.trim()}
             >
               {isImporting ? 'Importing...' : 'Import'}
@@ -193,7 +193,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
         </div>
 
         <div className="dialog-footer">
-          <button onClick={onClose} className="button-secondary">
+          <button onClick={onClose} className="btn btn-secondary">
             Close
           </button>
         </div>
