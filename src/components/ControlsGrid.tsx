@@ -3,13 +3,13 @@ import ProfileCard from './ProfileCard'
 import AddProfileTile from './AddProfileTile'
 
 interface ControlsGridProps {
-  filteredConfigs: ApiConfig[]
+  configs: ApiConfig[]
 }
 
-function ControlsGrid({ filteredConfigs }: ControlsGridProps) {
+function ControlsGrid({ configs }: ControlsGridProps) {
   return (
     <div className="controls-grid">
-      {filteredConfigs.map((config) => (
+      {configs.map((config) => (
         <ProfileCard key={config.id} config={config} />
       ))}
       <AddProfileTile />
