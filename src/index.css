@@ -803,32 +803,6 @@ select.field-input {
   letter-spacing: 1px;
 }
 
-.result-panel {
-  margin-top: 16px;
-  padding: 12px;
-  background: var(--bg-secondary);
-  border-radius: var(--radius);
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-
-.result-panel pre {
-  white-space: pre-wrap;
-  word-break: break-word;
-  margin-top: 8px;
-  color: var(--text-secondary);
-}
-
-.result-panel.error {
-  background: var(--red-dim);
-  color: var(--red);
-}
-
-.result-panel.success {
-  background: var(--green-dim);
-}
-
-/* Compact Collapsible Result Panel */
 .result-panel-compact {
   margin-top: 6px;
   background: var(--bg-secondary);
@@ -932,35 +906,6 @@ select.field-input {
   line-height: 1.5;
 }
 
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-  color: var(--text-secondary);
-}
-
-.empty-icon {
-  font-size: 48px;
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.empty-title {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 8px;
-  color: var(--text-primary);
-}
-
-.empty-text {
-  font-size: 13px;
-  max-width: 300px;
-}
-
 .saved-indicator {
   color: var(--green);
   font-size: 11px;
@@ -1019,82 +964,6 @@ select.field-input {
   }
 }
 
-.compact-view {
-  padding: 12px;
-}
-
-.compact-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-}
-
-.compact-header h1 {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.compact-count {
-  font-size: 10px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.compact-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 6px;
-}
-
-.compact-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: var(--transition);
-}
-
-.compact-card:hover {
-  border-color: var(--border-bright);
-}
-
-.compact-status {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.compact-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.compact-name {
-  font-size: 9px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 1px;
-}
-
-.compact-meta {
-  font-size: 8px;
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-}
-
-/* Claude Code Dialog Styles */
 .btn-claude {
   background: var(--amber);
   color: #0a0c0f;

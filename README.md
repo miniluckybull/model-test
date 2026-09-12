@@ -1,168 +1,70 @@
 # Model Tester
 
-本地开发模型资源检测工具，支持多 API 配置管理和实时连通性测试。
+本地开发模型资源检测工具：管理多套 LLM API 配置、测试连通性与延迟/Token，并可一键把配置应用到 Claude Code。全中文界面。
 
-![Model Tester](https://img.shields.io/badge/version-0.2.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey)
+![version](https://img.shields.io/badge/version-0.2.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![platform](https://img.shields.io/badge/platform-macOS-lightgrey)
 
 ## 功能特性
 
-- **多 API 配置管理** - 添加、编辑、删除多个 API 配置
-- **实时连通性测试** - 测试 OpenAI / Anthropic 兼容接口的连通性
-- **延迟与 Token 统计** - 显示响应时间和 token 使用量
-- **批量测试** - 一键测试所有配置的 API
-- **项目级配置导出** - 将配置导出到项目 .claude 目录，支持多窗口不同配置
-- **高级配置参数** - 支持 thinking_mode、thinking_effort、max_tokens 等高级设置
-- **配置管理增强** - 导入导出、标签过滤、统计面板等批量操作
-- **配置复制** - 快速复制配置并修改，方便多模型对比
-- **暗色主题 UI** - 专业级深色设计，支持响应式布局
-- **本地持久化** - 配置自动保存到本地文件系统
+- **多 API 配置管理**：添加 / 编辑 / 删除 / 复制多个配置，支持标签
+- **连通性测试**：测试 OpenAI / Anthropic 兼容接口，显示延迟与 Token 用量；"全部测试"批量跑
+- **应用到 Claude Code**：把当前配置写入 `~/.claude/settings.json`（可选目标路径，支持新建文件）；三方代理自动处理 auth_token 冲突
+- **高级参数**：thinking_mode / thinking_effort / max_tokens（横向滑块）
+- **项目级导出**：导出到项目的 `.claude/settings.json`
+- **导入 / 导出**：JSON 配置导入导出（Header 入口）
+- **配置模板**：Claude / OpenAI 官方与通用代理预设
+- **统计面板**：总数 / 可用 / 失败 / 成功率 / 平均延迟 / 按 Provider 分布
+- **本地持久化**：配置存本地文件；暗色主题
 
-## 技术栈
+## 安装
 
-| 层级 | 技术 |
-|------|------|
-| 前端 | React 19 + TypeScript + Vite |
-| 后端 | Tauri 2 + Rust |
-| 状态管理 | Zustand |
-| 样式 | CSS Custom Properties (暗色主题) |
-
-## 快速开始
-
-### 普通用户安装
-
-如果只是安装使用，不需要克隆源码，也不需要安装 Node.js 或 Rust：
-
-1. 下载仓库根目录的 `Model_Tester_0.1.0_macOS.dmg`
-2. 双击打开 DMG
-3. 将 `Model Tester.app` 拖到 `Applications` / `应用程序`
-4. 首次打开如提示无法验证开发者，请在 Finder 中右键应用并选择 **打开**
-
-### 开发者本地运行
-
-### 环境要求
-
-- Node.js 18.18+
-- Rust 1.77+ (用于 Tauri 桌面应用)
-
-macOS 安装 Rust：
+### 方式 A：直接安装（无需源码/构建环境）
+从 [GitHub Releases](../../releases) 下载 `Model Tester_<版本>_aarch64.dmg`（Apple Silicon），或让维护者发你 dmg。终端执行：
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
+hdiutil attach "Model Tester_0.2.0_aarch64.dmg"
+cp -R "/Volumes/Model Tester/Model Tester.app" /Applications/
+hdiutil detach "/Volumes/Model Tester"
+xattr -dr com.apple.quarantine "/Applications/Model Tester.app"   # 未公证，必须去隔离
+open "/Applications/Model Tester.app"
 ```
 
-如果运行 `npm run tauri:dev` 时出现 `failed to run 'cargo metadata'` 或 `No such file or directory (os error 2)`，说明当前终端找不到 Rust/Cargo，请先完成上面的 Rust 安装并重新打开终端。
+> 未做 Apple 公证，务必执行 `xattr` 一步，或首次右键→打开。当前包为 aarch64（M 系列芯片）。
 
-### 安装依赖
+### 方式 B：从源码构建
+前置：Node.js 18.18+、Rust 1.77+。
 
 ```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh && source "$HOME/.cargo/env"
+git clone <本仓库地址> && cd model-test
 npm install
+npm run tauri:build     # 产物在 src-tauri/target/release/bundle/
 ```
 
-### 开发模式
+开发模式：`npm run tauri:dev`（桌面）或 `npm run dev`（浏览器）。
 
-```bash
-# 启动 Tauri 桌面应用 (推荐)
-npm run tauri:dev
+## 使用
 
-# 仅启动前端 (浏览器模式)
-npm run dev
-```
-
-### 构建
-
-```bash
-# 构建前端
-npm run build
-
-# 构建桌面应用
-npm run tauri:build
-```
-
-构建完成后，安装包位于 `src-tauri/target/release/bundle/` 目录下。
-
-## 使用指南
-
-### 添加 API 配置
-
-1. 点击 **"+ Add New Profile"** 卡片
-2. 填写配置：
-   - **Name** - 配置名称 (如 "My Claude Model")
-   - **Provider** - 提供商 (OpenAI / Anthropic / Custom)
-   - **Endpoint** - API 地址 (如 `https://api.openai.com`)
-   - **Model** - 模型名称 (如 `gpt-4o-mini`)
-   - **API Key** - 您的 API 密钥
-3. 点击 **"Add Profile"** 保存
-
-### 测试连通性
-
-- 点击单个卡片的 **"Test"** 按钮测试该配置
-- 点击上方的 **"Test All (N)"** 按钮批量测试所有配置
-
-### 复制配置
-
-点击卡片上的 **"Duplicate"** 按钮快速复制配置，方便创建相似配置后修改。
-
-### 编辑与删除
-
-- **"Edit"** - 编辑配置详情
-- **"🗑️"** - 删除配置 (需确认)
+1. **添加配置**：点"+ 添加新配置"卡片，填名称 / 提供商 / 端点 / 模型 / API Key。
+2. **测试**：卡片"测试"按钮测单个；右上"全部测试"测所有。
+3. **应用到 Claude Code**：卡片"应用至 Claude Code"→ 选目标路径（检测列表单选，或"自定义路径"保存对话框可新建）→ 调整滑块参数 → 应用。
+4. **导入/导出、模板**：Header 的"导入/导出""模板"入口。
+5. **统计**：右上"显示统计"。
 
 ## 支持的 API 格式
 
-### OpenAI 兼容接口
+- **OpenAI 兼容**：`Authorization: Bearer <KEY>`，`/v1/chat/completions`
+- **Anthropic**：`x-api-key: <KEY>` + `anthropic-version: 2023-06-01`，`/v1/messages`
+- **自定义**：选 Custom，默认 OpenAI 兼容格式
 
-```
-Endpoint: https://api.openai.com
-Auth: Authorization: Bearer <API_KEY>
-Path: /v1/chat/completions
-```
-
-### Anthropic 接口
-
-```
-Endpoint: https://api.anthropic.com
-Auth: x-api-key: <API_KEY>
-Header: anthropic-version: 2023-06-01
-Path: /v1/messages
-```
-
-### 自定义接口
-
-选择 "Custom" 提供商，默认使用 OpenAI 兼容格式。
-
-## 项目结构
-
-```
-model-test/
-├── src/                    # React 前端源码
-│   ├── components/         # UI 组件
-│   ├── store/              # Zustand 状态管理
-│   ├── services/           # Tauri IPC 调用
-│   ├── types/              # TypeScript 类型定义
-│   └── utils/              # 工具函数和常量
-│
-├── src-tauri/              # Tauri 后端
-│   ├── src/                # Rust 源码
-│   │   ├── commands/       # Tauri 命令 (API CRUD + 测试)
-│   │   ├── models/         # 数据模型
-│   │   ├── services/       # HTTP 客户端
-│   │   └── storage/        # 本地持久化
-│   ├── capabilities/       # Tauri 权限配置
-│   └── tauri.conf.json     # Tauri 应用配置
-│
-├── package.json            # npm 配置
-├── vite.config.ts          # Vite 构建配置
-└── tsconfig.json           # TypeScript 配置
-```
-
-## 配置文件存储位置
+## 配置存储位置
 
 - macOS: `~/Library/Application Support/com.local.model-test/configs.json`
-- Windows: `%APPDATA%/com.local.model-test/configs.json`
 - Linux: `~/.config/com.local.model-test/configs.json`
+
+## 发布
+
+更新 `package.json` 与 `src-tauri/tauri.conf.json` 版本号 → `npm run tauri:build` → 把 `bundle/dmg/*.dmg` 上传到 GitHub Releases 并打 tag。
 
 ## 许可证
 
