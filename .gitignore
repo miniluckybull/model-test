@@ -19,3 +19,6 @@ src-tauri/target/
 
 # Logs
 *.log
+
+# Release artifacts
+*.dmg
