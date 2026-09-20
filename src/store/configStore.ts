@@ -18,6 +18,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       endpoint: config.endpoint,
       model: config.model,
       api_key: config.apiKey,
+      tiers: config.tiers,
       tags: config.tags,
       order: config.order,
     });
@@ -45,6 +46,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       endpoint: sourceConfig.endpoint,
       model: sourceConfig.model,
       api_key: sourceConfig.apiKey,
+      tiers: sourceConfig.tiers,
       tags: sourceConfig.tags,
       order: sourceConfig.order,
     });
@@ -75,6 +77,10 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     if (updates.model !== undefined) backendUpdate.model = updates.model;
     if (updates.apiKey !== undefined) {
       backendUpdate.api_key = updates.apiKey;
+    }
+    // 'tiers' present with null/undefined value means clear on the backend
+    if ('tiers' in updates) {
+      backendUpdate.tiers = updates.tiers ?? null;
     }
     if (updates.status !== undefined) backendUpdate.status = updates.status;
     if (updates.lastLatency !== undefined) backendUpdate.last_latency = updates.lastLatency;
@@ -176,6 +182,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
           endpoint: config.endpoint,
           model: config.model,
           apiKey: config.apiKey,
+          tiers: config.tiers,
           tags: config.tags || [],
           order: config.order,
         });

@@ -19,7 +19,16 @@ pub fn init(app: &AppHandle) -> Result<(), String> {
     let configs = if path.exists() {
         let content = std::fs::read_to_string(&path)
             .map_err(|e| format!("无法读取配置: {}", e))?;
-        serde_json::from_str(&content).unwrap_or_default()
+        match serde_json::from_str(&content) {
+            Ok(configs) => configs,
+            Err(e) => {
+                // Never silently wipe user data: back the corrupt file up
+                eprintln!("配置文件解析失败，已备份原文件: {}", e);
+                let backup = path.with_extension("json.corrupt-backup");
+                let _ = std::fs::rename(&path, &backup);
+                Vec::new()
+            }
+        }
     } else {
         Vec::new()
     };

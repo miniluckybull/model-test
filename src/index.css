@@ -50,10 +50,14 @@ html {
 body {
   min-height: 100vh;
   background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  /* 窗口被系统强制窄于布局极限时（如 macOS 分屏），横向滚动而非元素重叠遮挡 */
+  overflow-x: auto;
 }
 
 #root {
   max-width: 1180px;
+  /* 布局极限点：与 Tauri minWidth 960 对应（960 - 两侧 padding 40） */
+  min-width: 920px;
   margin: 0 auto;
   padding: 20px;
   min-height: 100vh;
@@ -1160,6 +1164,17 @@ select.field-input {
   color: var(--green);
 }
 
+.path-warning {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--amber);
+  border-radius: 6px;
+  background: var(--amber-dim);
+  color: var(--amber);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 /* 滑块参数 */
 .slider-field {
   display: flex;
@@ -1794,3 +1809,366 @@ select.field-input {
   color: var(--amber);
 }
 
+
+/* ===== 模型分级策略 ===== */
+.tier-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.tier-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tier-row {
+  display: grid;
+  grid-template-columns: 64px minmax(160px, 220px) minmax(120px, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.tier-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.tier-opus { color: var(--amber); }
+.tier-sonnet { color: var(--blue); }
+.tier-haiku { color: var(--green); }
+
+.tier-custom-input {
+  min-width: 0;
+}
+
+.tier-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ===== 级联快速应用菜单 ===== */
+.cascade-overlay {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.cascade-menu {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.cascade-left,
+.cascade-right {
+  display: flex;
+  flex-direction: column;
+  min-width: 240px;
+  max-width: 320px;
+  padding: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.cascade-right {
+  min-width: 260px;
+}
+
+.cascade-loading,
+.cascade-empty {
+  padding: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.cascade-target,
+.cascade-action,
+.cascade-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.cascade-target:hover,
+.cascade-action:hover,
+.cascade-profile:hover {
+  background: var(--bg-input);
+}
+
+.cascade-target.active {
+  background: var(--bg-input);
+  border-left: 2px solid var(--amber);
+}
+
+.cascade-target-label {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cascade-target-sub {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cascade-target-sub.muted {
+  color: var(--text-muted);
+}
+
+.cascade-check {
+  color: var(--green);
+  font-size: 12px;
+}
+
+.cascade-check.applying {
+  color: var(--amber);
+}
+
+.cascade-arrow {
+  color: var(--text-muted);
+}
+
+.cascade-divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: var(--border);
+}
+
+.cascade-action {
+  color: var(--text-secondary);
+}
+
+.cascade-right-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.cascade-profile-name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cascade-profile-model {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cascade-tier-dot {
+  padding: 1px 6px;
+  border: 1px solid var(--green);
+  border-radius: 10px;
+  color: var(--green);
+  font-size: 10px;
+}
+
+.cascade-error {
+  margin: 6px 8px;
+  padding: 8px;
+  border-radius: var(--radius);
+  background: var(--red-dim);
+  color: var(--red);
+  font-size: 12px;
+}
+
+.cascade-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--green);
+  border-radius: var(--radius);
+  color: var(--green);
+  font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+/* ===== 配置总览表格 ===== */
+.overview-table-wrap {
+  overflow-x: auto;
+}
+
+.overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.overview-table th,
+.overview-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.overview-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.overview-target {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 220px;
+}
+
+.overview-label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.overview-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.overview-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.overview-badge.local {
+  background: var(--amber-dim);
+  color: var(--amber);
+}
+
+.overview-badge.shared {
+  background: var(--blue);
+  color: #06121a;
+}
+
+.overview-badge.none {
+  background: var(--bg-input);
+  color: var(--text-muted);
+}
+
+.overview-model {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.overview-tier {
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+.overview-time {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.overview-remove {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.overview-footnote {
+  margin-top: 10px;
+}
+
+.header-button-primary {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* 级联菜单：选中态与确认按钮 */
+.cascade-profile.selected {
+  background: var(--amber-dim);
+  border-left: 2px solid var(--amber);
+}
+
+.cascade-profile.selected .cascade-profile-name {
+  color: var(--amber);
+}
+
+.cascade-confirm-row {
+  margin-top: 6px;
+  padding: 8px 8px 4px;
+  border-top: 1px solid var(--border);
+}
+
+.cascade-confirm {
+  width: 100%;
+}
+
+/* 级联菜单：应用成功后的下一步动作 */
+.cascade-next-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px 8px 4px;
+  border-top: 1px dashed var(--border);
+}
+
+.cascade-next-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cascade-next-row .btn {
+  padding: 5px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* 登记子弹层：新建目录表单 */
+.cascade-subform {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  gap: 8px;
+}

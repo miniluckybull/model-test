@@ -12,9 +12,9 @@
     "windows": [
       {
         "title": "Model Tester",
-        "width": 900,
+        "width": 1080,
         "height": 700,
-        "minWidth": 700,
+        "minWidth": 960,
         "minHeight": 500,
         "resizable": true,
         "decorations": true,

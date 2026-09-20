@@ -83,6 +83,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             storage::init(app.handle())?;
+            commands::projects::init_projects()?;
             start_auto_test_timer(app.handle().clone());
             Ok(())
         })
@@ -99,6 +100,13 @@ pub fn run() {
             commands::claude::apply_custom_claude_config,
             commands::claude::get_claude_config_path_command,
             commands::claude::export_to_project,
+            commands::projects::list_projects,
+            commands::projects::register_project,
+            commands::projects::remove_project,
+            commands::projects::scan_claude_target,
+            commands::projects::init_git_repo,
+            commands::projects::open_terminal_at,
+            commands::projects::create_project_dir,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

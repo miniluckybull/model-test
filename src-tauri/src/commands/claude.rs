@@ -12,6 +12,13 @@ pub struct ClaudeConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ModelTiersRequest {
+    pub opus: Option<String>,
+    pub sonnet: Option<String>,
+    pub haiku: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClaudeConfigRequest {
     pub api_key: String,
     pub auth_token: String,
@@ -21,6 +28,80 @@ pub struct ClaudeConfigRequest {
     pub thinking_mode: Option<String>,
     pub thinking_effort: Option<String>,
     pub max_tokens: Option<u32>,
+    /// Claude Code tier mapping: ANTHROPIC_DEFAULT_{OPUS,SONNET,HAIKU}_MODEL
+    #[serde(default)]
+    pub tiers: Option<ModelTiersRequest>,
+}
+
+/// Env keys this app manages; absent from build_env output means "remove"
+const MANAGED_ENV_KEYS: &[&str] = &[
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_MODEL",
+    "ANTHROPIC_THINKING_MODE",
+    "ANTHROPIC_THINKING_EFFORT",
+    "ANTHROPIC_MAX_TOKENS",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
+];
+
+/// Build the env entries managed by this app. Empty/None values are omitted;
+/// callers that merge into an existing config remove the omitted keys.
+fn put_env(env: &mut serde_json::Map<String, serde_json::Value>, key: &str, value: &str) {
+    if !value.is_empty() {
+        env.insert(key.to_string(), serde_json::Value::String(value.to_string()));
+    }
+}
+
+fn build_env(request: &ClaudeConfigRequest) -> serde_json::Map<String, serde_json::Value> {
+    let mut env = serde_json::Map::new();
+
+    put_env(&mut env, "ANTHROPIC_API_KEY", &request.api_key);
+
+    // Only set auth_token when NOT using a custom base_url (third-party proxy)
+    let is_using_proxy = request.base_url.as_ref().map_or(false, |url| {
+        !url.is_empty() && !url.contains("api.anthropic.com")
+    });
+    if !is_using_proxy {
+        put_env(&mut env, "ANTHROPIC_AUTH_TOKEN", &request.auth_token);
+    }
+
+    if let Some(v) = &request.base_url {
+        put_env(&mut env, "ANTHROPIC_BASE_URL", v);
+    }
+    if let Some(v) = &request.model {
+        put_env(&mut env, "ANTHROPIC_MODEL", v);
+    }
+    if let Some(v) = &request.thinking_mode {
+        put_env(&mut env, "ANTHROPIC_THINKING_MODE", v);
+    }
+    if let Some(v) = &request.thinking_effort {
+        put_env(&mut env, "ANTHROPIC_THINKING_EFFORT", v);
+    }
+    if let Some(t) = request.max_tokens {
+        if t > 0 {
+            env.insert(
+                "ANTHROPIC_MAX_TOKENS".to_string(),
+                serde_json::Value::String(t.to_string()),
+            );
+        }
+    }
+
+    if let Some(tiers) = &request.tiers {
+        if let Some(v) = &tiers.opus {
+            put_env(&mut env, "ANTHROPIC_DEFAULT_OPUS_MODEL", v);
+        }
+        if let Some(v) = &tiers.sonnet {
+            put_env(&mut env, "ANTHROPIC_DEFAULT_SONNET_MODEL", v);
+        }
+        if let Some(v) = &tiers.haiku {
+            put_env(&mut env, "ANTHROPIC_DEFAULT_HAIKU_MODEL", v);
+        }
+    }
+
+    env
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -191,49 +272,7 @@ pub fn preview_claude_config(request: ClaudeConfigRequest) -> Result<ConfigCompa
         .collect();
 
     // Build the new config in the same structure as settings.json
-    let mut env = serde_json::Map::new();
-
-    // Always set API key
-    env.insert("ANTHROPIC_API_KEY".to_string(), serde_json::Value::String(request.api_key.clone()));
-
-    // Only set auth_token if NOT using a custom base_url (third-party proxy)
-    let is_using_proxy = request.base_url.as_ref().map_or(false, |url| {
-        !url.is_empty() && !url.contains("api.anthropic.com")
-    });
-
-    if !is_using_proxy {
-        env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), serde_json::Value::String(request.auth_token.clone()));
-    }
-
-    if let Some(base_url) = &request.base_url {
-        if !base_url.is_empty() {
-            env.insert("ANTHROPIC_BASE_URL".to_string(), serde_json::Value::String(base_url.clone()));
-        }
-    }
-
-    if let Some(model) = &request.model {
-        if !model.is_empty() {
-            env.insert("ANTHROPIC_MODEL".to_string(), serde_json::Value::String(model.clone()));
-        }
-    }
-
-    if let Some(thinking_mode) = &request.thinking_mode {
-        if !thinking_mode.is_empty() {
-            env.insert("ANTHROPIC_THINKING_MODE".to_string(), serde_json::Value::String(thinking_mode.clone()));
-        }
-    }
-
-    if let Some(thinking_effort) = &request.thinking_effort {
-        if !thinking_effort.is_empty() {
-            env.insert("ANTHROPIC_THINKING_EFFORT".to_string(), serde_json::Value::String(thinking_effort.clone()));
-        }
-    }
-
-    if let Some(max_tokens) = request.max_tokens {
-        if max_tokens > 0 {
-            env.insert("ANTHROPIC_MAX_TOKENS".to_string(), serde_json::Value::String(max_tokens.to_string()));
-        }
-    }
+    let env = build_env(&request);
 
     let mut new_config = serde_json::Map::new();
     new_config.insert("env".to_string(), serde_json::Value::Object(env));
@@ -261,63 +300,20 @@ pub fn apply_claude_config(request: ClaudeConfigRequest) -> Result<String, Strin
     let path_ref = request.custom_config_path.as_deref().filter(|s| !s.is_empty());
     let mut config = read_claude_config(path_ref)?;
 
-    // Always set API key
-    config.env.insert("ANTHROPIC_API_KEY".to_string(), request.api_key.clone());
-
-    // Only set auth_token if NOT using a custom base_url (third-party proxy)
-    let is_using_proxy = request.base_url.as_ref().map_or(false, |url| {
-        !url.is_empty() && !url.contains("api.anthropic.com")
-    });
-
-    if !is_using_proxy {
-        config.env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), request.auth_token);
-    } else {
-        // Remove auth_token if switching to proxy mode
-        config.env.remove("ANTHROPIC_AUTH_TOKEN");
-    }
-
-    if let Some(base_url) = request.base_url {
-        if !base_url.is_empty() {
-            config.env.insert("ANTHROPIC_BASE_URL".to_string(), base_url);
-        } else {
-            config.env.remove("ANTHROPIC_BASE_URL");
+    let env = build_env(&request);
+    for key in MANAGED_ENV_KEYS {
+        match env.get(*key).and_then(|v| v.as_str()) {
+            Some(value) => {
+                config.env.insert(key.to_string(), value.to_string());
+            }
+            None => {
+                config.env.remove(*key);
+            }
         }
     }
 
-    if let Some(model) = request.model {
-        if !model.is_empty() {
-            // Set both env.ANTHROPIC_MODEL and model for Claude Code compatibility
-            config.env.insert("ANTHROPIC_MODEL".to_string(), model.clone());
-            config.model = Some(model);
-        } else {
-            config.env.remove("ANTHROPIC_MODEL");
-            config.model = None;
-        }
-    }
-
-    if let Some(thinking_mode) = request.thinking_mode {
-        if !thinking_mode.is_empty() {
-            config.env.insert("ANTHROPIC_THINKING_MODE".to_string(), thinking_mode);
-        } else {
-            config.env.remove("ANTHROPIC_THINKING_MODE");
-        }
-    }
-
-    if let Some(thinking_effort) = request.thinking_effort {
-        if !thinking_effort.is_empty() {
-            config.env.insert("ANTHROPIC_THINKING_EFFORT".to_string(), thinking_effort);
-        } else {
-            config.env.remove("ANTHROPIC_THINKING_EFFORT");
-        }
-    }
-
-    if let Some(max_tokens) = request.max_tokens {
-        if max_tokens > 0 {
-            config.env.insert("ANTHROPIC_MAX_TOKENS".to_string(), max_tokens.to_string());
-        } else {
-            config.env.remove("ANTHROPIC_MAX_TOKENS");
-        }
-    }
+    // Set both env.ANTHROPIC_MODEL and model for Claude Code compatibility
+    config.model = request.model.clone().filter(|m| !m.is_empty());
 
     let config_path = write_claude_config(&config, path_ref)?;
 
@@ -370,6 +366,10 @@ pub fn apply_custom_claude_config(config_json: String, custom_config_path: Optio
 pub struct ExportToProjectResult {
     pub config_path: String,
     pub created_directory: bool,
+    /// true when config was written to settings.local.json (contains secrets)
+    pub used_local_settings: bool,
+    /// true when .claude/.gitignore was created/updated to exclude settings.local.json
+    pub gitignore_updated: bool,
 }
 
 /// Export configuration to a specific project directory
@@ -397,65 +397,217 @@ pub fn export_to_project(
             .map_err(|e| format!("创建 .claude 目录失败: {}", e))?;
     }
 
-    // Build config
+    // Build config from the shared env builder
+    let env_map = build_env(&request);
     let mut config = ClaudeConfig {
         env: HashMap::new(),
-        model: None,
+        model: request.model.clone().filter(|m| !m.is_empty()),
+    };
+    for (key, value) in env_map {
+        if let Some(s) = value.as_str() {
+            config.env.insert(key, s.to_string());
+        }
+    }
+
+    // Configs containing secrets go to settings.local.json, which Claude Code
+    // users conventionally gitignore; plain configs go to settings.json.
+    let contains_secret = config
+        .env
+        .get("ANTHROPIC_API_KEY")
+        .or_else(|| config.env.get("ANTHROPIC_AUTH_TOKEN"))
+        .map_or(false, |v| !v.is_empty());
+    let file_name = if contains_secret {
+        "settings.local.json"
+    } else {
+        "settings.json"
+    };
+    let config_path = claude_dir.join(file_name);
+
+    // Merge into the existing file (if any) so unrelated settings such as
+    // permissions and enabledMcpjsonServers are preserved.
+    let mut root: serde_json::Map<String, serde_json::Value> = if config_path.exists() {
+        fs::read_to_string(&config_path)
+            .ok()
+            .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            .and_then(|v| v.as_object().cloned())
+            .unwrap_or_default()
+    } else {
+        serde_json::Map::new()
     };
 
-    // Set API key
-    config.env.insert("ANTHROPIC_API_KEY".to_string(), request.api_key.clone());
-
-    // Handle auth_token based on proxy usage
-    let is_using_proxy = request.base_url.as_ref().map_or(false, |url| {
-        !url.is_empty() && !url.contains("api.anthropic.com")
-    });
-
-    if !is_using_proxy {
-        config.env.insert("ANTHROPIC_AUTH_TOKEN".to_string(), request.auth_token.clone());
-    }
-
-    if let Some(base_url) = &request.base_url {
-        if !base_url.is_empty() {
-            config.env.insert("ANTHROPIC_BASE_URL".to_string(), base_url.clone());
+    let env_entry = root
+        .entry("env")
+        .or_insert_with(|| serde_json::Value::Object(serde_json::Map::new()));
+    if let Some(env_obj) = env_entry.as_object_mut() {
+        for (key, value) in &config.env {
+            env_obj.insert(key.clone(), serde_json::Value::String(value.clone()));
         }
     }
-
-    if let Some(model) = &request.model {
-        if !model.is_empty() {
-            config.env.insert("ANTHROPIC_MODEL".to_string(), model.clone());
-            config.model = Some(model.clone());
-        }
+    if let Some(model) = &config.model {
+        root.insert("model".to_string(), serde_json::Value::String(model.clone()));
     }
 
-    if let Some(thinking_mode) = &request.thinking_mode {
-        if !thinking_mode.is_empty() {
-            config.env.insert("ANTHROPIC_THINKING_MODE".to_string(), thinking_mode.clone());
-        }
-    }
-
-    if let Some(thinking_effort) = &request.thinking_effort {
-        if !thinking_effort.is_empty() {
-            config.env.insert("ANTHROPIC_THINKING_EFFORT".to_string(), thinking_effort.clone());
-        }
-    }
-
-    if let Some(max_tokens) = request.max_tokens {
-        if max_tokens > 0 {
-            config.env.insert("ANTHROPIC_MAX_TOKENS".to_string(), max_tokens.to_string());
-        }
-    }
-
-    // Write to project's .claude/settings.json
-    let config_path = claude_dir.join("settings.json");
-    let json = serde_json::to_string_pretty(&config)
+    let json = serde_json::to_string_pretty(&serde_json::Value::Object(root))
         .map_err(|e| format!("序列化配置失败: {}", e))?;
 
     fs::write(&config_path, json)
         .map_err(|e| format!("写入配置文件失败: {}", e))?;
 
+    // Keep secrets out of git: ensure .claude/.gitignore excludes settings.local.json
+    let mut gitignore_updated = false;
+    if contains_secret {
+        let gitignore_path = claude_dir.join(".gitignore");
+        let existing = fs::read_to_string(&gitignore_path).unwrap_or_default();
+        let already_ignored = existing
+            .lines()
+            .any(|line| line.trim() == "settings.local.json");
+        if !already_ignored {
+            let mut content = existing;
+            if !content.is_empty() && !content.ends_with('\n') {
+                content.push('\n');
+            }
+            content.push_str("settings.local.json\n");
+            // Best-effort: failure to write .gitignore should not fail the export
+            gitignore_updated = fs::write(&gitignore_path, content).is_ok();
+        }
+    }
+
+    // Remember the project so it shows up in the registry / cascade menu
+    let _ = super::projects::register_project_internal(&project_path, "export", true);
+
     Ok(ExportToProjectResult {
         config_path: config_path.to_string_lossy().to_string(),
         created_directory,
+        used_local_settings: contains_secret,
+        gitignore_updated,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_request(api_key: &str) -> ClaudeConfigRequest {
+        ClaudeConfigRequest {
+            api_key: api_key.to_string(),
+            auth_token: api_key.to_string(),
+            base_url: Some("https://api.example.com".to_string()),
+            model: Some("test-model".to_string()),
+            custom_config_path: None,
+            thinking_mode: None,
+            thinking_effort: None,
+            max_tokens: None,
+            tiers: None,
+        }
+    }
+
+    fn temp_project(name: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("model-test-{}-{}", name, std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn export_with_secret_writes_local_settings_and_gitignore() {
+        let project = temp_project("secret");
+        let result = export_to_project(make_request("sk-test-123"), project.to_string_lossy().to_string()).unwrap();
+
+        assert!(result.used_local_settings);
+        assert!(result.config_path.ends_with(".claude/settings.local.json"));
+
+        let content: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&result.config_path).unwrap()).unwrap();
+        assert_eq!(content["env"]["ANTHROPIC_API_KEY"], "sk-test-123");
+        assert_eq!(content["model"], "test-model");
+
+        let gitignore = fs::read_to_string(project.join(".claude/.gitignore")).unwrap();
+        assert!(gitignore.contains("settings.local.json"));
+
+        fs::remove_dir_all(&project).unwrap();
+    }
+
+    #[test]
+    fn export_merges_with_existing_local_settings() {
+        let project = temp_project("merge");
+        let claude_dir = project.join(".claude");
+        fs::create_dir_all(&claude_dir).unwrap();
+        fs::write(
+            claude_dir.join("settings.local.json"),
+            r#"{"permissions":{"allow":["Bash(ls *)"]},"env":{"OTHER_VAR":"keep-me"}}"#,
+        )
+        .unwrap();
+
+        let result = export_to_project(make_request("sk-test-456"), project.to_string_lossy().to_string()).unwrap();
+
+        let content: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&result.config_path).unwrap()).unwrap();
+        // 原有的 permissions 和无关 env 变量保留
+        assert_eq!(content["permissions"]["allow"][0], "Bash(ls *)");
+        assert_eq!(content["env"]["OTHER_VAR"], "keep-me");
+        // 新配置写入
+        assert_eq!(content["env"]["ANTHROPIC_API_KEY"], "sk-test-456");
+
+        fs::remove_dir_all(&project).unwrap();
+    }
+
+    #[test]
+    fn export_without_secret_writes_plain_settings() {
+        let project = temp_project("nosecret");
+        let result = export_to_project(make_request(""), project.to_string_lossy().to_string()).unwrap();
+
+        assert!(!result.used_local_settings);
+        assert!(result.config_path.ends_with(".claude/settings.json"));
+        assert!(!project.join(".claude/.gitignore").exists());
+
+        fs::remove_dir_all(&project).unwrap();
+    }
+
+    #[test]
+    fn build_env_writes_tier_variables() {
+        let mut req = make_request("sk-tier-1");
+        req.tiers = Some(ModelTiersRequest {
+            opus: Some("big-model".to_string()),
+            sonnet: None,
+            haiku: Some("tiny-model".to_string()),
+        });
+        let env = build_env(&req);
+        assert_eq!(
+            env.get("ANTHROPIC_DEFAULT_OPUS_MODEL").and_then(|v| v.as_str()),
+            Some("big-model")
+        );
+        assert_eq!(
+            env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL").and_then(|v| v.as_str()),
+            Some("tiny-model")
+        );
+        assert!(!env.contains_key("ANTHROPIC_DEFAULT_SONNET_MODEL"));
+        // deprecated variable must never be written
+        assert!(!env.contains_key("ANTHROPIC_SMALL_FAST_MODEL"));
+    }
+
+    #[test]
+    fn apply_removes_cleared_tier_keys() {
+        let dir = temp_project("apply-tiers");
+        let path = dir.join("settings.json");
+        let mut req = make_request("sk-tier-2");
+        req.custom_config_path = Some(path.to_string_lossy().to_string());
+        req.tiers = Some(ModelTiersRequest {
+            opus: None,
+            sonnet: None,
+            haiku: Some("tiny".to_string()),
+        });
+        apply_claude_config(req.clone()).unwrap();
+        let content: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        assert_eq!(content["env"]["ANTHROPIC_DEFAULT_HAIKU_MODEL"], "tiny");
+
+        let mut cleared = req.clone();
+        cleared.tiers = None;
+        apply_claude_config(cleared).unwrap();
+        let content2: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&path).unwrap()).unwrap();
+        assert!(content2["env"].get("ANTHROPIC_DEFAULT_HAIKU_MODEL").is_none());
+
+        fs::remove_dir_all(&dir).unwrap();
+    }
 }

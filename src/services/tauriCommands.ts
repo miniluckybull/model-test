@@ -1,5 +1,13 @@
 import { invoke } from '@tauri-apps/api/core';
-import { ApiConfig, ClaudeConfigRequest, ConfigComparison, ExportToProjectResult } from '../types';
+import {
+  ApiConfig,
+  ClaudeConfigRequest,
+  ConfigComparison,
+  ExportToProjectResult,
+  ModelTiers,
+  ProjectEntry,
+  TargetConfigInfo,
+} from '../types';
 
 interface CreateConfigPayload {
   name: string;
@@ -7,6 +15,7 @@ interface CreateConfigPayload {
   endpoint: string;
   model: string;
   api_key: string;
+  tiers?: ModelTiers;
   tags?: string[];
   order?: number;
 }
@@ -18,6 +27,8 @@ interface UpdateConfigPayload {
   endpoint?: string;
   model?: string;
   api_key?: string;
+  /** outer undefined = keep; null = clear */
+  tiers?: ModelTiers | null;
   status?: string;
   last_latency?: number;
   last_tokens?: number;
@@ -34,6 +45,7 @@ interface BackendConfig {
   endpoint: string;
   model: string;
   api_key: string;
+  tiers?: ModelTiers;
   status: string;
   last_latency?: number;
   last_tokens?: number;
@@ -88,6 +100,62 @@ export async function exportToProject(request: ClaudeConfigRequest, projectPath:
   return invoke<ExportToProjectResult>('export_to_project', { request, projectPath });
 }
 
+// Project registry & target scan commands
+export async function listProjects(): Promise<ProjectEntry[]> {
+  return invoke<ProjectEntry[]>('list_projects');
+}
+
+export async function registerProject(path: string): Promise<ProjectEntry> {
+  return invoke<ProjectEntry>('register_project', { path });
+}
+
+export async function removeProject(path: string): Promise<void> {
+  return invoke('remove_project', { path });
+}
+
+export async function scanClaudeTarget(path?: string): Promise<TargetConfigInfo> {
+  return invoke<TargetConfigInfo>('scan_claude_target', { path: path ?? null });
+}
+
+/** create an empty project dir under parent and register it */
+export async function createProjectDir(parent: string, name: string): Promise<ProjectEntry> {
+  return invoke<ProjectEntry>('create_project_dir', { parent, name });
+}
+
+/** git init a project dir; resolves false when a repo already exists */
+export async function initGitRepo(path: string): Promise<boolean> {
+  return invoke<boolean>('init_git_repo', { path });
+}
+
+/** open a Terminal.app window at the directory (macOS) */
+export async function openTerminalAt(path: string): Promise<void> {
+  return invoke('open_terminal_at', { path });
+}
+
+export interface ClaudeRequestOptions {
+  customConfigPath?: string;
+  thinkingMode?: 'auto' | 'enabled' | 'disabled';
+  thinkingEffort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  maxTokens?: number;
+  /** overrides the profile's stored tiers (e.g. dialog edit state) */
+  tiers?: ModelTiers;
+}
+
+/** Single source of truth for building a ClaudeConfigRequest from a profile */
+export function buildClaudeRequest(config: ApiConfig, opts: ClaudeRequestOptions = {}): ClaudeConfigRequest {
+  return {
+    api_key: config.apiKey,
+    auth_token: config.apiKey,
+    base_url: config.endpoint,
+    model: config.model,
+    custom_config_path: opts.customConfigPath,
+    thinking_mode: opts.thinkingMode ?? 'auto',
+    thinking_effort: opts.thinkingEffort ?? 'high',
+    max_tokens: opts.maxTokens && opts.maxTokens > 0 ? opts.maxTokens : 8192,
+    tiers: opts.tiers ?? config.tiers,
+  };
+}
+
 export function mapBackendConfig(backend: BackendConfig): ApiConfig {
   return {
     id: backend.id,
@@ -96,6 +164,7 @@ export function mapBackendConfig(backend: BackendConfig): ApiConfig {
     endpoint: backend.endpoint,
     model: backend.model,
     apiKey: backend.api_key,
+    tiers: backend.tiers,
     status: backend.status as ApiConfig['status'],
     lastLatency: backend.last_latency,
     lastTokens: backend.last_tokens,

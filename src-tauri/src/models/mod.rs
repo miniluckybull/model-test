@@ -1,5 +1,17 @@
 use serde::{Deserialize, Serialize};
 
+/// Claude Code model tier mapping: which real model each of the
+/// opus/sonnet/haiku aliases resolves to (ANTHROPIC_DEFAULT_*_MODEL).
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct ModelTiers {
+    #[serde(default)]
+    pub opus: Option<String>,
+    #[serde(default)]
+    pub sonnet: Option<String>,
+    #[serde(default)]
+    pub haiku: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiConfig {
     pub id: String,
@@ -8,6 +20,8 @@ pub struct ApiConfig {
     pub endpoint: String,
     pub model: String,
     pub api_key: String,
+    #[serde(default)]
+    pub tiers: Option<ModelTiers>,
     #[serde(default)]
     pub status: String,
     #[serde(default)]
@@ -64,6 +78,7 @@ impl Default for ApiConfig {
             endpoint: String::new(),
             model: String::new(),
             api_key: String::new(),
+            tiers: None,
             status: "idle".to_string(),
             last_latency: None,
             last_tokens: None,

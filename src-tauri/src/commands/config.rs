@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::models::ApiConfig;
+use crate::models::{ApiConfig, ModelTiers};
 use crate::storage;
 
 #[derive(Deserialize)]
@@ -10,6 +10,8 @@ pub struct CreateConfig {
     pub endpoint: String,
     pub model: String,
     pub api_key: String,
+    #[serde(default)]
+    pub tiers: Option<ModelTiers>,
     #[serde(default)]
     pub tags: Vec<String>,
     pub order: Option<usize>,
@@ -26,6 +28,7 @@ pub fn add_api_config(config: CreateConfig) -> Result<String, String> {
         endpoint: config.endpoint,
         model: config.model,
         api_key: config.api_key,
+        tiers: config.tiers,
         status: "idle".to_string(),
         last_latency: None,
         last_tokens: None,
@@ -50,6 +53,7 @@ pub struct ConfigResponse {
     pub endpoint: String,
     pub model: String,
     pub api_key: String,
+    pub tiers: Option<ModelTiers>,
     pub status: String,
     pub last_latency: Option<u64>,
     pub last_tokens: Option<u64>,
@@ -69,6 +73,7 @@ pub fn get_all_configs() -> Result<Vec<ConfigResponse>, String> {
         endpoint: c.endpoint,
         model: c.model,
         api_key: c.api_key,
+        tiers: c.tiers,
         status: c.status,
         last_latency: c.last_latency,
         last_tokens: c.last_tokens,
@@ -87,6 +92,9 @@ pub struct UpdateConfig {
     pub endpoint: Option<String>,
     pub model: Option<String>,
     pub api_key: Option<String>,
+    /// Outer None = field absent (keep existing); Some(None) = clear tiers
+    #[serde(default)]
+    pub tiers: Option<Option<ModelTiers>>,
     pub status: Option<String>,
     pub last_latency: Option<u64>,
     pub last_tokens: Option<u64>,
@@ -115,6 +123,9 @@ pub fn update_api_config(update: UpdateConfig) -> Result<(), String> {
         }
         if let Some(api_key) = update.api_key {
             config.api_key = api_key;
+        }
+        if let Some(tiers) = update.tiers {
+            config.tiers = tiers;
         }
         if let Some(status) = update.status {
             config.status = status;

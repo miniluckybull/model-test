@@ -1,12 +1,56 @@
 import { useState, useEffect, useCallback } from 'react'
-import { ApiConfig, ConfigComparison, ExportToProjectResult } from '../types'
-import { previewClaudeConfig, applyClaudeConfig, applyCustomClaudeConfig, exportToProject } from '../services/tauriCommands'
-import { open, save } from '@tauri-apps/plugin-dialog'
+import { ApiConfig, ConfigComparison, ExportToProjectResult, ModelTiers } from '../types'
+import {
+  previewClaudeConfig,
+  applyClaudeConfig,
+  applyCustomClaudeConfig,
+  exportToProject,
+  buildClaudeRequest,
+} from '../services/tauriCommands'
+import { useConfigStore } from '../store/configStore'
+import { open, save, ask } from '@tauri-apps/plugin-dialog'
+
+const TIER_KEYS = ['opus', 'sonnet', 'haiku'] as const
+type TierKey = (typeof TIER_KEYS)[number]
+
+const TIER_HINTS: Record<TierKey, string> = {
+  opus: 'opus 别名 / opusplan 规划阶段',
+  sonnet: 'sonnet 别名 / opusplan 执行阶段',
+  haiku: 'haiku 别名 + 后台轻量任务，建议选低成本模型省 token',
+}
+
+/** 去掉空白档，全空则返回 null（表示清空） */
+function normalizeTiers(tiers: ModelTiers): ModelTiers | null {
+  const clean: ModelTiers = {}
+  for (const key of TIER_KEYS) {
+    const value = (tiers[key] ?? '').trim()
+    if (value) clean[key] = value
+  }
+  return TIER_KEYS.some((k) => clean[k]) ? clean : null
+}
 
 interface ClaudeConfigDialogProps {
   isOpen: boolean
   onClose: () => void
   config: ApiConfig
+}
+
+/** Claude Code 实际会读取的配置文件位置 */
+function isValidClaudeConfigPath(p: string): boolean {
+  const normalized = p.replace(/\\/g, '/')
+  if (normalized.endsWith('/.claude.json')) return true
+  if (normalized.endsWith('/managed-settings.json')) return true
+  return /\/\.claude\/settings(\.local)?\.json$/.test(normalized)
+}
+
+/** 把用户选的路径纠正到最近的合法配置位置 */
+function suggestClaudeConfigPath(p: string): string {
+  const normalized = p.replace(/\\/g, '/')
+  const lastSlash = normalized.lastIndexOf('/')
+  const dir = lastSlash > 0 ? normalized.slice(0, lastSlash) : normalized
+  // 已在 .claude 目录内但文件名不对 → 直接改文件名
+  if (dir.endsWith('/.claude')) return `${dir}/settings.json`
+  return `${dir}/.claude/settings.json`
 }
 
 const THINKING_MODES = ['auto', 'enabled', 'disabled'] as const
@@ -29,9 +73,21 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
   const [projectPath, setProjectPath] = useState('')
   const [exportResult, setExportResult] = useState<ExportToProjectResult | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
+  const [tiers, setTiers] = useState<ModelTiers>({})
+  const [tierCustomMode, setTierCustomMode] = useState<Record<string, boolean>>({})
+
+  const allConfigs = useConfigStore((state) => state.configs)
+  const updateConfig = useConfigStore((state) => state.updateConfig)
 
   // 选中的配置路径；空表示用后端默认
   const activeConfigPath = selectedPath || undefined
+
+  useEffect(() => {
+    if (isOpen && config) {
+      setTiers(config.tiers ? { ...config.tiers } : {})
+      setTierCustomMode({})
+    }
+  }, [isOpen, config])
 
   const loadComparison = useCallback(async () => {
     if (!config) return
@@ -40,16 +96,13 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
     setError(null)
 
     try {
-      const request = {
-        api_key: config.apiKey,
-        auth_token: config.apiKey,
-        base_url: config.endpoint,
-        model: config.model,
-        custom_config_path: activeConfigPath,
-        thinking_mode: thinkingMode,
-        thinking_effort: thinkingEffort,
-        max_tokens: maxTokens > 0 ? maxTokens : undefined,
-      }
+      const request = buildClaudeRequest(config, {
+        customConfigPath: activeConfigPath,
+        thinkingMode,
+        thinkingEffort,
+        maxTokens: maxTokens > 0 ? maxTokens : undefined,
+        tiers: normalizeTiers(tiers) ?? undefined,
+      })
 
       const result = await previewClaudeConfig(request)
       setComparison(result)
@@ -70,7 +123,7 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
     } finally {
       setLoading(false)
     }
-  }, [config, activeConfigPath, selectedPath, thinkingMode, thinkingEffort, maxTokens])
+  }, [config, activeConfigPath, selectedPath, thinkingMode, thinkingEffort, maxTokens, tiers])
 
   useEffect(() => {
     if (isOpen && config) {
@@ -88,17 +141,19 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
       if (isEditing) {
         await applyCustomClaudeConfig(editableConfig, activeConfigPath)
       } else {
-        const request = {
-          api_key: config.apiKey,
-          auth_token: config.apiKey,
-          base_url: config.endpoint,
-          model: config.model,
-          custom_config_path: activeConfigPath,
-          thinking_mode: thinkingMode,
-          thinking_effort: thinkingEffort,
-          max_tokens: maxTokens > 0 ? maxTokens : undefined,
-        }
+        const normalizedTiers = normalizeTiers(tiers)
+        const request = buildClaudeRequest(config, {
+          customConfigPath: activeConfigPath,
+          thinkingMode,
+          thinkingEffort,
+          maxTokens: maxTokens > 0 ? maxTokens : undefined,
+          tiers: normalizedTiers ?? undefined,
+        })
         await applyClaudeConfig(request)
+        // 分级策略随配置档持久化，下次应用/快速应用自动带上
+        if (JSON.stringify(normalizedTiers ?? null) !== JSON.stringify(config.tiers ?? null)) {
+          await updateConfig(config.id, { tiers: normalizedTiers ?? undefined })
+        }
       }
 
       setSuccess(true)
@@ -123,7 +178,21 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
       })
 
       if (selected) {
-        setSelectedPath(selected)
+        if (isValidClaudeConfigPath(selected)) {
+          setSelectedPath(selected)
+        } else {
+          const suggested = suggestClaudeConfigPath(selected)
+          const useSuggested = await ask(
+            `所选路径不会被 Claude Code 读取：\n${selected}\n\n是否改用推荐路径？\n${suggested}`,
+            {
+              title: '路径可能无效',
+              kind: 'warning',
+              okLabel: '使用推荐路径',
+              cancelLabel: '仍用原路径',
+            }
+          )
+          setSelectedPath(useSuggested ? suggested : selected)
+        }
       }
     } catch (err: any) {
       setError(err.toString())
@@ -161,15 +230,12 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
     setExportResult(null)
 
     try {
-      const request = {
-        api_key: config.apiKey,
-        auth_token: config.apiKey,
-        base_url: config.endpoint,
-        model: config.model,
-        thinking_mode: thinkingMode,
-        thinking_effort: thinkingEffort,
-        max_tokens: maxTokens > 0 ? maxTokens : undefined,
-      }
+      const request = buildClaudeRequest(config, {
+        thinkingMode,
+        thinkingEffort,
+        maxTokens: maxTokens > 0 ? maxTokens : undefined,
+        tiers: normalizeTiers(tiers) ?? undefined,
+      })
 
       const result = await exportToProject(request, projectPath)
       setExportResult(result)
@@ -200,6 +266,9 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
 
   const modeIdx = Math.max(0, THINKING_MODES.indexOf(thinkingMode))
   const effortIdx = Math.max(0, THINKING_EFFORTS.indexOf(thinkingEffort))
+  const modelOptions = Array.from(
+    new Set(allConfigs.map((c) => c.model).filter((m) => !!m))
+  )
 
   return (
     <div className="dialog-overlay" onClick={onClose}>
@@ -254,6 +323,12 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
                       浏览…
                     </button>
                   </div>
+                  {isCustomPath && !isValidClaudeConfigPath(selectedPath) && (
+                    <div className="path-warning">
+                      ⚠ 该路径不会被 Claude Code 读取，配置写入后不会生效。建议重新选择到某个项目的
+                      .claude/settings.json 或 ~/.claude/settings.json。
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -331,6 +406,61 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
                   <span className="field-hint">最大响应长度（1024-200000）</span>
                 </div>
               </div>
+            </div>
+          )}
+
+          {!loading && !success && (
+            <div className="tier-section">
+              <div className="tier-section-header">
+                <span className="field-label">模型分级策略</span>
+                <span className="field-hint">
+                  对应 Claude Code 的 opus / sonnet / haiku 模型别名；未设置时后台任务将回退到主模型
+                </span>
+              </div>
+              {TIER_KEYS.map((tier) => {
+                const value = (tiers[tier] ?? '').trim()
+                const inOptions = modelOptions.includes(value)
+                const isCustom =
+                  tierCustomMode[tier] === true || (value !== '' && !inOptions)
+                return (
+                  <div className="tier-row" key={tier}>
+                    <span className={`tier-name tier-${tier}`}>{tier}</span>
+                    <select
+                      className="field-select"
+                      value={isCustom ? '__custom' : value}
+                      onChange={(e) => {
+                        const next = e.target.value
+                        if (next === '__custom') {
+                          setTierCustomMode((m) => ({ ...m, [tier]: true }))
+                        } else {
+                          setTierCustomMode((m) => ({ ...m, [tier]: false }))
+                          setTiers((t) => ({ ...t, [tier]: next === '' ? undefined : next }))
+                        }
+                      }}
+                    >
+                      <option value="">不设置（回退主模型）</option>
+                      {modelOptions.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                          {m === config.model ? '（本档主模型）' : ''}
+                        </option>
+                      ))}
+                      <option value="__custom">自定义模型名…</option>
+                    </select>
+                    {isCustom && (
+                      <input
+                        className="field-input tier-custom-input"
+                        placeholder="输入模型名"
+                        value={tiers[tier] ?? ''}
+                        onChange={(e) =>
+                          setTiers((t) => ({ ...t, [tier]: e.target.value }))
+                        }
+                      />
+                    )}
+                    <span className="tier-hint">{TIER_HINTS[tier]}</span>
+                  </div>
+                )
+              })}
             </div>
           )}
 
@@ -460,7 +590,10 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
                       </button>
                     </div>
                     <span className="field-hint">
-                      配置将保存至：{projectPath ? `${projectPath}/.claude/settings.json` : '（请选择目录）'}
+                      配置将保存至：{projectPath
+                        ? `${projectPath}/.claude/${config.apiKey ? 'settings.local.json' : 'settings.json'}`
+                        : '（请选择目录）'}
+                      {config.apiKey && '（含 API key，自动加入 git 忽略）'}
                     </span>
                   </div>
 
@@ -489,6 +622,13 @@ function ClaudeConfigDialog({ isOpen, onClose, config }: ClaudeConfigDialogProps
                     {exportResult.created_directory && '已创建 .claude 目录并 '}
                     保存至：<code>{exportResult.config_path}</code>
                   </p>
+                  {exportResult.used_local_settings && (
+                    <p className="success-hint">
+                      因包含 API key，已写入 settings.local.json
+                      {exportResult.gitignore_updated && '，并在 .claude/.gitignore 中忽略该文件'}
+                      ，不会被提交到 git。
+                    </p>
+                  )}
                   <p className="success-hint">
                     在此项目目录中启动 Claude Code 即可使用该配置。
                   </p>
