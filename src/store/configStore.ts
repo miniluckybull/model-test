@@ -6,6 +6,7 @@ import {
   updateApiConfig,
   deleteApiConfig,
   mapBackendConfig,
+  toBackendApplySettings,
 } from '../services/tauriCommands';
 
 export const useConfigStore = create<ConfigStore>((set, get) => ({
@@ -19,6 +20,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       model: config.model,
       api_key: config.apiKey,
       tiers: config.tiers,
+      apply_settings: toBackendApplySettings(config.applySettings),
       tags: config.tags,
       order: config.order,
     });
@@ -47,6 +49,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
       model: sourceConfig.model,
       api_key: sourceConfig.apiKey,
       tiers: sourceConfig.tiers,
+      apply_settings: toBackendApplySettings(sourceConfig.applySettings),
       tags: sourceConfig.tags,
       order: sourceConfig.order,
     });
@@ -81,6 +84,10 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
     // 'tiers' present with null/undefined value means clear on the backend
     if ('tiers' in updates) {
       backendUpdate.tiers = updates.tiers ?? null;
+    }
+    // same semantics for applySettings
+    if ('applySettings' in updates) {
+      backendUpdate.apply_settings = toBackendApplySettings(updates.applySettings) ?? null;
     }
     if (updates.status !== undefined) backendUpdate.status = updates.status;
     if (updates.lastLatency !== undefined) backendUpdate.last_latency = updates.lastLatency;
@@ -183,6 +190,7 @@ export const useConfigStore = create<ConfigStore>((set, get) => ({
           model: config.model,
           apiKey: config.apiKey,
           tiers: config.tiers,
+          applySettings: config.applySettings,
           tags: config.tags || [],
           order: config.order,
         });

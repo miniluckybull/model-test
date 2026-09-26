@@ -4,6 +4,8 @@ import { listProjects, removeProject, scanClaudeTarget } from '../services/tauri
 
 interface ConfigOverviewDialogProps {
   onClose: () => void
+  /** 移除登记成功后通知外层刷新（如左侧目标列表联动） */
+  onChanged?: () => void
 }
 
 interface OverviewRow {
@@ -21,7 +23,7 @@ function formatTime(iso?: string): string {
   return date.toLocaleString('zh-CN', { hour12: false })
 }
 
-function ConfigOverviewDialog({ onClose }: ConfigOverviewDialogProps) {
+function ConfigOverviewDialog({ onClose, onChanged }: ConfigOverviewDialogProps) {
   const [rows, setRows] = useState<OverviewRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -74,6 +76,7 @@ function ConfigOverviewDialog({ onClose }: ConfigOverviewDialogProps) {
     try {
       await removeProject(path)
       await load()
+      onChanged?.()
     } catch (err: any) {
       setError(err.toString())
     }
@@ -81,7 +84,7 @@ function ConfigOverviewDialog({ onClose }: ConfigOverviewDialogProps) {
 
   return (
     <div className="dialog-overlay" onClick={onClose}>
-      <div className="dialog-content dialog-large" onClick={(e) => e.stopPropagation()}>
+      <div className="dialog-content dialog-large overview-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <h2 className="dialog-title">配置总览</h2>
           <button className="dialog-close" onClick={onClose}>x</button>

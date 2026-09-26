@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import {
   ApiConfig,
+  ApplySettings,
   ClaudeConfigRequest,
   ConfigComparison,
   ExportToProjectResult,
@@ -9,6 +10,13 @@ import {
   TargetConfigInfo,
 } from '../types';
 
+/** backend serde shape of ApplySettings */
+interface BackendApplySettings {
+  thinking_mode?: string;
+  thinking_effort?: string;
+  max_tokens?: number;
+}
+
 interface CreateConfigPayload {
   name: string;
   provider: string;
@@ -16,6 +24,7 @@ interface CreateConfigPayload {
   model: string;
   api_key: string;
   tiers?: ModelTiers;
+  apply_settings?: BackendApplySettings | null;
   tags?: string[];
   order?: number;
 }
@@ -29,6 +38,8 @@ interface UpdateConfigPayload {
   api_key?: string;
   /** outer undefined = keep; null = clear */
   tiers?: ModelTiers | null;
+  /** outer undefined = keep; null = clear */
+  apply_settings?: BackendApplySettings | null;
   status?: string;
   last_latency?: number;
   last_tokens?: number;
@@ -46,6 +57,7 @@ interface BackendConfig {
   model: string;
   api_key: string;
   tiers?: ModelTiers;
+  apply_settings?: BackendApplySettings;
   status: string;
   last_latency?: number;
   last_tokens?: number;
@@ -132,6 +144,25 @@ export async function openTerminalAt(path: string): Promise<void> {
   return invoke('open_terminal_at', { path });
 }
 
+export function toBackendApplySettings(s?: ApplySettings | null): BackendApplySettings | null | undefined {
+  if (s === null) return null;
+  if (!s) return undefined;
+  return {
+    thinking_mode: s.thinkingMode,
+    thinking_effort: s.thinkingEffort,
+    max_tokens: s.maxTokens,
+  };
+}
+
+export function fromBackendApplySettings(s?: BackendApplySettings): ApplySettings | undefined {
+  if (!s) return undefined;
+  return {
+    thinkingMode: s.thinking_mode as ApplySettings['thinkingMode'],
+    thinkingEffort: s.thinking_effort as ApplySettings['thinkingEffort'],
+    maxTokens: s.max_tokens,
+  };
+}
+
 export interface ClaudeRequestOptions {
   customConfigPath?: string;
   thinkingMode?: 'auto' | 'enabled' | 'disabled';
@@ -143,15 +174,17 @@ export interface ClaudeRequestOptions {
 
 /** Single source of truth for building a ClaudeConfigRequest from a profile */
 export function buildClaudeRequest(config: ApiConfig, opts: ClaudeRequestOptions = {}): ClaudeConfigRequest {
+  const stored = config.applySettings;
+  const maxTokens = opts.maxTokens ?? stored?.maxTokens;
   return {
     api_key: config.apiKey,
     auth_token: config.apiKey,
     base_url: config.endpoint,
     model: config.model,
     custom_config_path: opts.customConfigPath,
-    thinking_mode: opts.thinkingMode ?? 'auto',
-    thinking_effort: opts.thinkingEffort ?? 'high',
-    max_tokens: opts.maxTokens && opts.maxTokens > 0 ? opts.maxTokens : 8192,
+    thinking_mode: opts.thinkingMode ?? stored?.thinkingMode ?? 'auto',
+    thinking_effort: opts.thinkingEffort ?? stored?.thinkingEffort ?? 'high',
+    max_tokens: maxTokens && maxTokens > 0 ? maxTokens : 8192,
     tiers: opts.tiers ?? config.tiers,
   };
 }
@@ -165,6 +198,7 @@ export function mapBackendConfig(backend: BackendConfig): ApiConfig {
     model: backend.model,
     apiKey: backend.api_key,
     tiers: backend.tiers,
+    applySettings: fromBackendApplySettings(backend.apply_settings),
     status: backend.status as ApiConfig['status'],
     lastLatency: backend.last_latency,
     lastTokens: backend.last_tokens,

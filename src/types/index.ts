@@ -5,6 +5,13 @@ export interface ModelTiers {
   haiku?: string;
 }
 
+/** Per-profile Claude apply details, persisted with the config profile */
+export interface ApplySettings {
+  thinkingMode?: 'auto' | 'enabled' | 'disabled';
+  thinkingEffort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  maxTokens?: number;
+}
+
 export interface ApiConfig {
   id: string;
   name: string;
@@ -13,6 +20,7 @@ export interface ApiConfig {
   model: string;
   apiKey: string;
   tiers?: ModelTiers;
+  applySettings?: ApplySettings;
   status: 'idle' | 'running' | 'ok' | 'failed';
   lastLatency?: number;
   lastTokens?: number;

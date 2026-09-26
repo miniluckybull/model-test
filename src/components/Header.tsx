@@ -3,15 +3,18 @@ import { useConfigStore } from '../store/configStore'
 import { testModel } from '../services/tauriCommands'
 import ImportExportDialog from './ImportExportDialog'
 import TemplateDialog from './TemplateDialog'
-import QuickApplyMenu from './QuickApplyMenu'
+import type { AppTab } from '../App'
 
-function Header() {
+interface HeaderProps {
+  activeTab: AppTab
+}
+
+function Header({ activeTab }: HeaderProps) {
   const configs = useConfigStore((state) => state.configs)
   const setConfigStatus = useConfigStore((state) => state.setConfigStatus)
   const [isTestingAll, setIsTestingAll] = useState(false)
   const [showImportExport, setShowImportExport] = useState(false)
   const [showTemplate, setShowTemplate] = useState(false)
-  const [showQuickApply, setShowQuickApply] = useState(false)
 
   const handleTestAll = async () => {
     if (isTestingAll) return
@@ -47,29 +50,23 @@ function Header() {
           <p className="header-subtitle">本地模型资源检测</p>
         </div>
         <div className="header-actions">
-          <button
-            className="header-button header-button-primary"
-            onClick={() => setShowQuickApply(true)}
-            title="选择目标（全局/项目）与模型配置档，一键应用"
-          >
-            ⚡ 快速应用
-          </button>
           <button className="header-button" onClick={() => setShowTemplate(true)}>
             📋 模板
           </button>
           <button className="header-button" onClick={() => setShowImportExport(true)}>
             📦 导入/导出
           </button>
-          <button className="header-test-all" onClick={handleTestAll} disabled={!canTestAll}>
-            <span>{isTestingAll ? '测试中' : '全部测试'}</span>
-            <span className="header-test-count">{configs.length}</span>
-          </button>
+          {activeTab === 'test' && (
+            <button className="header-test-all" onClick={handleTestAll} disabled={!canTestAll}>
+              <span>{isTestingAll ? '测试中' : '全部测试'}</span>
+              <span className="header-test-count">{configs.length}</span>
+            </button>
+          )}
         </div>
       </header>
 
       {showImportExport && <ImportExportDialog onClose={() => setShowImportExport(false)} />}
       {showTemplate && <TemplateDialog onClose={() => setShowTemplate(false)} />}
-      {showQuickApply && <QuickApplyMenu onClose={() => setShowQuickApply(false)} />}
     </>
   )
 }

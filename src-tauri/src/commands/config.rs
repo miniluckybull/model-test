@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::models::{ApiConfig, ModelTiers};
+use crate::models::{ApiConfig, ApplySettings, ModelTiers};
 use crate::storage;
 
 #[derive(Deserialize)]
@@ -12,6 +12,8 @@ pub struct CreateConfig {
     pub api_key: String,
     #[serde(default)]
     pub tiers: Option<ModelTiers>,
+    #[serde(default)]
+    pub apply_settings: Option<ApplySettings>,
     #[serde(default)]
     pub tags: Vec<String>,
     pub order: Option<usize>,
@@ -29,6 +31,7 @@ pub fn add_api_config(config: CreateConfig) -> Result<String, String> {
         model: config.model,
         api_key: config.api_key,
         tiers: config.tiers,
+        apply_settings: config.apply_settings,
         status: "idle".to_string(),
         last_latency: None,
         last_tokens: None,
@@ -54,6 +57,7 @@ pub struct ConfigResponse {
     pub model: String,
     pub api_key: String,
     pub tiers: Option<ModelTiers>,
+    pub apply_settings: Option<ApplySettings>,
     pub status: String,
     pub last_latency: Option<u64>,
     pub last_tokens: Option<u64>,
@@ -74,6 +78,7 @@ pub fn get_all_configs() -> Result<Vec<ConfigResponse>, String> {
         model: c.model,
         api_key: c.api_key,
         tiers: c.tiers,
+        apply_settings: c.apply_settings,
         status: c.status,
         last_latency: c.last_latency,
         last_tokens: c.last_tokens,
@@ -95,6 +100,9 @@ pub struct UpdateConfig {
     /// Outer None = field absent (keep existing); Some(None) = clear tiers
     #[serde(default)]
     pub tiers: Option<Option<ModelTiers>>,
+    /// Same semantics as tiers
+    #[serde(default)]
+    pub apply_settings: Option<Option<ApplySettings>>,
     pub status: Option<String>,
     pub last_latency: Option<u64>,
     pub last_tokens: Option<u64>,
@@ -126,6 +134,9 @@ pub fn update_api_config(update: UpdateConfig) -> Result<(), String> {
         }
         if let Some(tiers) = update.tiers {
             config.tiers = tiers;
+        }
+        if let Some(apply_settings) = update.apply_settings {
+            config.apply_settings = apply_settings;
         }
         if let Some(status) = update.status {
             config.status = status;

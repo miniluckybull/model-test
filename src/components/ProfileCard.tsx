@@ -4,7 +4,6 @@ import { useConfigStore } from '../store/configStore'
 import { testModel } from '../services/tauriCommands'
 import { PROVIDERS, STATUS_COLORS } from '../utils/constants'
 import Tag from './Tag'
-import ClaudeConfigDialog from './ClaudeConfigDialog'
 import { listen } from '@tauri-apps/api/event'
 
 interface ProfileCardProps {
@@ -32,7 +31,6 @@ function ProfileCard({ config }: ProfileCardProps) {
   const [editModel, setEditModel] = useState(config.model)
   const [editApiKey, setEditApiKey] = useState(config.apiKey)
   const [lastResult, setLastResult] = useState<TestResult | null>(null)
-  const [showClaudeDialog, setShowClaudeDialog] = useState(false)
   const [resultExpanded, setResultExpanded] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -296,18 +294,6 @@ function ProfileCard({ config }: ProfileCardProps) {
               </svg>
             </button>
 
-            {config.status === 'ok' && (
-              <button
-                className="btn-icon btn-claude"
-                onClick={() => setShowClaudeDialog(true)}
-                title="应用至 Claude Code"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2L2 12l10 10 10-10L12 2z"/>
-                </svg>
-              </button>
-            )}
-
             <button
               className="btn-icon btn-delete"
               onClick={() => setShowDeleteConfirm(true)}
@@ -320,12 +306,6 @@ function ProfileCard({ config }: ProfileCardProps) {
               </svg>
             </button>
           </div>
-
-          <ClaudeConfigDialog
-            isOpen={showClaudeDialog}
-            onClose={() => setShowClaudeDialog(false)}
-            config={config}
-          />
         </>
       ) : (
         <>

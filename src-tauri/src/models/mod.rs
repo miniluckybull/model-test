@@ -12,6 +12,18 @@ pub struct ModelTiers {
     pub haiku: Option<String>,
 }
 
+/// Per-profile Claude apply details (thinking / max tokens), persisted so the
+/// project-api-config tab restores them on next apply.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
+pub struct ApplySettings {
+    #[serde(default)]
+    pub thinking_mode: Option<String>,
+    #[serde(default)]
+    pub thinking_effort: Option<String>,
+    #[serde(default)]
+    pub max_tokens: Option<u64>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiConfig {
     pub id: String,
@@ -22,6 +34,8 @@ pub struct ApiConfig {
     pub api_key: String,
     #[serde(default)]
     pub tiers: Option<ModelTiers>,
+    #[serde(default)]
+    pub apply_settings: Option<ApplySettings>,
     #[serde(default)]
     pub status: String,
     #[serde(default)]
@@ -79,6 +93,7 @@ impl Default for ApiConfig {
             model: String::new(),
             api_key: String::new(),
             tiers: None,
+            apply_settings: None,
             status: "idle".to_string(),
             last_latency: None,
             last_tokens: None,
