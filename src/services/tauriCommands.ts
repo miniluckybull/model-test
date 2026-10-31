@@ -139,9 +139,9 @@ export async function initGitRepo(path: string): Promise<boolean> {
   return invoke<boolean>('init_git_repo', { path });
 }
 
-/** open a Terminal.app window at the directory (macOS) */
-export async function openTerminalAt(path: string): Promise<void> {
-  return invoke('open_terminal_at', { path });
+/** open a Terminal.app window at the directory, optionally starting Claude Code (macOS) */
+export async function openTerminalAt(path: string, launchClaude = false): Promise<void> {
+  return invoke('open_terminal_at', { path, launchClaude });
 }
 
 export function toBackendApplySettings(s?: ApplySettings | null): BackendApplySettings | null | undefined {

@@ -258,16 +258,21 @@ pub fn init_git_repo(path: String) -> Result<bool, String> {
     Ok(true)
 }
 
-/// Open a Terminal.app window at the given directory (macOS).
+/// Open a Terminal.app window at the given directory (macOS), optionally starting Claude Code.
 #[tauri::command]
-pub fn open_terminal_at(path: String) -> Result<(), String> {
+pub fn open_terminal_at(path: String, launch_claude: Option<bool>) -> Result<(), String> {
     let dir = PathBuf::from(&path);
     if !dir.is_dir() {
         return Err(format!("路径不是目录: {}", path));
     }
-    let escaped = path.replace('\\', "\\\\").replace('"', "\\\"");
+    let shell_path = path.replace('\'', "'\\''");
+    let mut command = format!("cd '{}'", shell_path);
+    if launch_claude.unwrap_or(false) {
+        command.push_str(" && claude");
+    }
+    let escaped = command.replace('\\', "\\\\").replace('"', "\\\"");
     let script = format!(
-        "tell application \"Terminal\"\nactivate\ndo script \"cd \\\"{}\\\"\"\nend tell",
+        "tell application \"Terminal\"\nactivate\ndo script \"{}\"\nend tell",
         escaped
     );
     let output = std::process::Command::new("osascript")

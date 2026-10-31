@@ -15,7 +15,6 @@ import {
   scanClaudeTarget,
 } from '../services/tauriCommands'
 import { open } from '@tauri-apps/plugin-dialog'
-import ConfigOverviewDialog from './ConfigOverviewDialog'
 import {
   THINKING_MODES,
   THINKING_MODE_LABELS,
@@ -58,9 +57,9 @@ function ProjectApiConfigView() {
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null)
   const [loadingTargets, setLoadingTargets] = useState(true)
   const [applying, setApplying] = useState(false)
+  const [launchingPath, setLaunchingPath] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [viewError, setViewError] = useState<string | null>(null)
-  const [showOverview, setShowOverview] = useState(false)
   const [showRegisterForm, setShowRegisterForm] = useState(false)
   const [newProjectParent, setNewProjectParent] = useState('')
   const [newProjectName, setNewProjectName] = useState('')
@@ -266,14 +265,17 @@ function ProjectApiConfigView() {
     }
   }
 
-  const handleOpenTerminal = async () => {
-    if (!appliedProjectPath) return
+  const handleLaunchClaude = async (path: string) => {
+    if (launchingPath) return
+    setLaunchingPath(path)
     setViewError(null)
     try {
-      await openTerminalAt(appliedProjectPath)
-      showToast('已打开终端，请在其中运行 claude', 3000)
+      await openTerminalAt(path, true)
+      showToast('已打开新终端，正在启动 Claude Code', 3000)
     } catch (err: any) {
       setViewError(err.toString())
+    } finally {
+      setLaunchingPath(null)
     }
   }
 
@@ -355,6 +357,20 @@ function ProjectApiConfigView() {
                   <span className={`pav-target-sub ${t.info.model ? '' : 'muted'}`}>{t.sub}</span>
                   {t.info.model && <span className="pav-target-check">✓</span>}
                 </button>
+                {t.path && (
+                  <button
+                    className="pav-target-launch"
+                    title={`在新终端中启动 ${t.label} 的 Claude Code`}
+                    aria-label={`启动 ${t.label} 的 Claude Code`}
+                    disabled={launchingPath !== null}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleLaunchClaude(t.path!)
+                    }}
+                  >
+                    {launchingPath === t.path ? '…' : '▶'}
+                  </button>
+                )}
                 {t.path &&
                   (confirmRemovePath === t.path ? (
                     <span className="pav-remove-confirm">
@@ -391,9 +407,6 @@ function ProjectApiConfigView() {
         <div className="pav-left-actions">
           <button className="btn btn-secondary pav-action-btn" onClick={() => setShowRegisterForm((v) => !v)}>
             ＋ 登记新项目…
-          </button>
-          <button className="btn btn-secondary pav-action-btn" onClick={() => setShowOverview(true)}>
-            ⚙ 配置总览
           </button>
         </div>
 
@@ -445,7 +458,7 @@ function ProjectApiConfigView() {
             应用至：{activeTargetRow?.label ?? '—'}
           </span>
           {activeInfo?.full_path && (
-            <span className="overview-badge shared">
+            <span className="pav-source-badge">
               当前 {activeInfo.source_file}
             </span>
           )}
@@ -513,20 +526,18 @@ function ProjectApiConfigView() {
             <button className="btn btn-secondary" onClick={handleGitInit}>
               初始化 git
             </button>
-            <button className="btn btn-secondary" onClick={handleOpenTerminal}>
-              打开终端启动 Claude Code
+            <button
+              className="btn btn-secondary"
+              disabled={launchingPath !== null}
+              onClick={() => handleLaunchClaude(appliedProjectPath)}
+            >
+              {launchingPath === appliedProjectPath ? '正在打开终端…' : '打开终端启动 Claude Code'}
             </button>
           </div>
         )}
       </section>
 
       {toast && <div className="cascade-toast pav-toast">{toast}</div>}
-      {showOverview && (
-        <ConfigOverviewDialog
-          onClose={() => setShowOverview(false)}
-          onChanged={refreshTargets}
-        />
-      )}
     </div>
   )
 }
