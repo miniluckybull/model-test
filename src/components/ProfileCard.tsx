@@ -1,20 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { listen } from '@tauri-apps/api/event'
 import { ApiConfig, TestResult } from '../types'
 import { useConfigStore } from '../store/configStore'
 import { testModel } from '../services/tauriCommands'
-import { PROVIDERS, STATUS_COLORS } from '../utils/constants'
-import Tag from './Tag'
-import { listen } from '@tauri-apps/api/event'
+import { PROVIDERS } from '../utils/constants'
+import { Icon, type IconName } from './Icon'
 
 interface ProfileCardProps {
   config: ApiConfig
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  idle: '空闲',
-  running: '运行中',
-  ok: '可用',
-  failed: '失败',
+  idle: '待检测',
+  running: '检测中',
+  ok: '连接正常',
+  failed: '连接失败',
+}
+
+const STATUS_ICONS: Record<ApiConfig['status'], IconName> = {
+  idle: 'clock',
+  running: 'activity',
+  ok: 'check',
+  failed: 'x',
 }
 
 function ProfileCard({ config }: ProfileCardProps) {
@@ -61,11 +68,9 @@ function ProfileCard({ config }: ProfileCardProps) {
       })
     }
 
-    setupListener()
+    setupListener().catch((error) => console.error('Failed to listen for test result:', error))
 
-    return () => {
-      if (unlisten) unlisten()
-    }
+    return () => unlisten?.()
   }, [config.id, updateTestResult, setConfigStatus])
 
   const handleTest = async () => {
@@ -126,52 +131,51 @@ function ProfileCard({ config }: ProfileCardProps) {
     }
   }
 
-  const statusColor = STATUS_COLORS[config.status]
   const providerName = PROVIDERS[config.provider]?.name || '自定义'
   const lastTestedTime = config.lastTestedAt
-    ? new Date(config.lastTestedAt).toLocaleTimeString()
+    ? new Date(config.lastTestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '从未'
   const hasLastLatency = typeof config.lastLatency === 'number'
   const hasLastTokens = typeof config.lastTokens === 'number'
   const hasTestStats = hasLastLatency || hasLastTokens || Boolean(config.lastTestedAt)
 
   return (
-    <div className={`profile-card status-${config.status}`}>
+    <article className={`profile-card status-${config.status}`}>
       {!isEditing ? (
         <>
-          <div className="config-overview" title={config.endpoint}>
-            <div className="use-preview">
-              <div className="preview-header">
-                <span className="meta-label">用途</span>
-                <Tag color={statusColor}>{STATUS_LABELS[config.status] ?? config.status}</Tag>
-              </div>
-              <span className="use-value" title={config.name}>{config.name}</span>
+          <div className="card-heading-row">
+            <div className="card-title-block">
+              <h3 className="card-model-id" title={config.model}>{config.model}</h3>
+              <p className="card-config-name" title={config.name}>{config.name}</p>
             </div>
-            <div className="model-preview">
-              <div className="preview-header">
-                <span className="meta-label">模型</span>
-                <span className="provider-chip">{providerName}</span>
-              </div>
-              <span className="model-value" title={config.model}>{config.model}</span>
-            </div>
+            <span className={`connection-status ${config.status}`}>
+              <Icon name={STATUS_ICONS[config.status]} size={13} strokeWidth={2.2} />
+              <span>{STATUS_LABELS[config.status] ?? config.status}</span>
+            </span>
           </div>
 
-          {hasTestStats && (
+          {hasTestStats ? (
             <div className="test-summary-strip">
               <div className="test-primary-metric">
-                <span className="stat-label">最近测试</span>
+                <span className="stat-label">响应延迟</span>
                 <span className={`stat-value ${config.status === 'ok' ? 'green' : config.status === 'failed' ? 'red' : 'amber'}`}>
-                  {hasLastLatency ? `${config.lastLatency}ms` : '—'}
+                  {hasLastLatency ? config.lastLatency : '—'}<small>{hasLastLatency ? ' ms' : ''}</small>
                 </span>
               </div>
               <div className="test-secondary-metric">
                 <span className="stat-label">Tokens</span>
                 <span className="stat-value">{hasLastTokens ? config.lastTokens : '—'}</span>
               </div>
-              <div className="test-secondary-metric">
-                <span className="stat-label">时间</span>
+              <div className="test-secondary-metric tested-at">
+                <span className="stat-label">最近检测</span>
                 <span className="stat-value">{lastTestedTime}</span>
               </div>
+            </div>
+          ) : (
+            <div className="card-no-test">
+              <Icon name="activity" size={15} />
+              <span>尚未运行连接测试</span>
+              <span>READY</span>
             </div>
           )}
 
@@ -181,33 +185,24 @@ function ProfileCard({ config }: ProfileCardProps) {
                 className="result-toggle"
                 onClick={() => setResultExpanded(!resultExpanded)}
                 aria-label="切换结果详情"
+                aria-expanded={resultExpanded}
               >
                 <span className="result-summary">
                   {lastResult.success ? (
                     <>
-                      <span className="result-status success">✓</span>
+                      <span className="result-status success"><Icon name="check" size={11} /></span>
                       <span className="result-stats-inline">
-                        {lastResult.actualModel ? `返回模型：${lastResult.actualModel}` : '响应详情'}
+                        {lastResult.actualModel ? `返回模型：${lastResult.actualModel}` : '查看响应详情'}
                       </span>
                     </>
                   ) : (
                     <>
-                      <span className="result-status error">✕</span>
-                      <span className="result-error-brief">{lastResult.errorMessage?.substring(0, 50)}...</span>
+                      <span className="result-status error"><Icon name="x" size={11} /></span>
+                      <span className="result-error-brief">{lastResult.errorMessage?.substring(0, 50) || '连接测试失败'}</span>
                     </>
                   )}
                 </span>
-                <svg
-                  className={`chevron ${resultExpanded ? 'rotated' : ''}`}
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <polyline points="6 9 12 15 18 9"></polyline>
-                </svg>
+                <Icon name="chevron-down" size={13} className={`chevron ${resultExpanded ? 'rotated' : ''}`} />
               </button>
 
               {resultExpanded && (
@@ -215,7 +210,7 @@ function ProfileCard({ config }: ProfileCardProps) {
                   {lastResult.success ? (
                     <div>
                       {lastResult.actualModel && (
-                        <div className="result-error-full">实际模型：{lastResult.actualModel}</div>
+                        <div className="result-actual-model">实际模型：{lastResult.actualModel}</div>
                       )}
                       <pre className="result-response">{lastResult.modelResponse}</pre>
                     </div>
@@ -229,15 +224,12 @@ function ProfileCard({ config }: ProfileCardProps) {
 
           {showDeleteConfirm && (
             <div className="delete-confirm">
-              <span>删除"{config.name}"？</span>
+              <strong>删除「{config.name}」？</strong>
+              <span>此操作只会删除本地配置档案。</span>
               {deleteError && <span className="delete-error">{deleteError}</span>}
               <div className="delete-confirm-actions">
-                <button
-                  className="btn btn-danger"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? '删除中…' : '删除'}
+                <button className="btn btn-danger" onClick={handleDelete} disabled={isDeleting}>
+                  {isDeleting ? '删除中…' : '确认删除'}
                 </button>
                 <button
                   className="btn btn-secondary"
@@ -255,70 +247,64 @@ function ProfileCard({ config }: ProfileCardProps) {
 
           <div className="card-footer">
             <button
-              className="btn-icon btn-test"
+              className="card-test-button"
               onClick={handleTest}
               disabled={config.status === 'running'}
-              title={config.status === 'running' ? '测试中…' : '测试'}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
+              <Icon name="activity" size={16} className={config.status === 'running' ? 'is-spinning' : ''} />
+              <span>{config.status === 'running' ? '正在检测' : '运行测试'}</span>
             </button>
-
-            <button
-              className="btn-icon btn-edit"
-              onClick={() => {
-                setEditName(config.name)
-                setEditProvider(config.provider)
-                setEditEndpoint(config.endpoint)
-                setEditModel(config.model)
-                setEditApiKey(config.apiKey)
-                setIsEditing(true)
-              }}
-              title="编辑"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-            </button>
-
-            <button
-              className="btn-icon btn-duplicate"
-              onClick={() => duplicateConfig(config.id)}
-              title="复制"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-            </button>
-
-            <button
-              className="btn-icon btn-delete"
-              onClick={() => setShowDeleteConfirm(true)}
-              title="删除"
-              disabled={isDeleting}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-              </svg>
-            </button>
+            <div className="card-utility-actions">
+              <button
+                className="btn-icon btn-edit"
+                onClick={() => {
+                  setEditName(config.name)
+                  setEditProvider(config.provider)
+                  setEditEndpoint(config.endpoint)
+                  setEditModel(config.model)
+                  setEditApiKey(config.apiKey)
+                  setIsEditing(true)
+                }}
+                title="编辑配置"
+                aria-label={`编辑 ${config.name}`}
+              >
+                <Icon name="edit" size={15} />
+              </button>
+              <button
+                className="btn-icon btn-duplicate"
+                onClick={() => duplicateConfig(config.id)}
+                title="创建副本"
+                aria-label={`复制 ${config.name}`}
+              >
+                <Icon name="copy" size={15} />
+              </button>
+              <button
+                className="btn-icon btn-delete"
+                onClick={() => setShowDeleteConfirm(true)}
+                title="删除配置"
+                aria-label={`删除 ${config.name}`}
+                disabled={isDeleting}
+              >
+                <Icon name="trash" size={15} />
+              </button>
+            </div>
           </div>
         </>
       ) : (
         <>
           <div className="card-header">
             <div>
+              <span className="section-kicker">EDIT PROFILE</span>
               <h3 className="card-name">编辑配置</h3>
             </div>
+            <span className="provider-glyph">{providerName.charAt(0)}</span>
           </div>
 
           <div className="card-form">
             <div className="field-group">
-              <label className="field-label">用途</label>
+              <label className="field-label" htmlFor={`name-${config.id}`}>配置名称</label>
               <input
+                id={`name-${config.id}`}
                 type="text"
                 className="field-input"
                 value={editName}
@@ -328,8 +314,9 @@ function ProfileCard({ config }: ProfileCardProps) {
 
             <div className="field-row">
               <div className="field-group">
-                <label className="field-label">提供商</label>
+                <label className="field-label" htmlFor={`provider-${config.id}`}>提供商</label>
                 <select
+                  id={`provider-${config.id}`}
                   className="field-input"
                   value={editProvider}
                   onChange={(e) => setEditProvider(e.target.value as any)}
@@ -340,8 +327,9 @@ function ProfileCard({ config }: ProfileCardProps) {
                 </select>
               </div>
               <div className="field-group">
-                <label className="field-label">模型</label>
+                <label className="field-label" htmlFor={`model-${config.id}`}>模型</label>
                 <input
+                  id={`model-${config.id}`}
                   type="text"
                   className="field-input"
                   value={editModel}
@@ -351,8 +339,9 @@ function ProfileCard({ config }: ProfileCardProps) {
             </div>
 
             <div className="field-group">
-              <label className="field-label">端点</label>
+              <label className="field-label" htmlFor={`endpoint-${config.id}`}>端点</label>
               <input
+                id={`endpoint-${config.id}`}
                 type="text"
                 className="field-input"
                 value={editEndpoint}
@@ -361,8 +350,9 @@ function ProfileCard({ config }: ProfileCardProps) {
             </div>
 
             <div className="field-group">
-              <label className="field-label">API Key</label>
+              <label className="field-label" htmlFor={`key-${config.id}`}>API Key</label>
               <input
+                id={`key-${config.id}`}
                 type="password"
                 className="field-input"
                 value={editApiKey}
@@ -371,17 +361,13 @@ function ProfileCard({ config }: ProfileCardProps) {
             </div>
           </div>
 
-          <div className="card-footer">
-            <button className="btn btn-success" onClick={handleSave}>
-              保存
-            </button>
-            <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>
-              取消
-            </button>
+          <div className="card-footer edit-footer">
+            <button className="btn btn-primary" onClick={handleSave}>保存更改</button>
+            <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>取消</button>
           </div>
         </>
       )}
-    </div>
+    </article>
   )
 }
 

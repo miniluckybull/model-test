@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useConfigStore } from '../store/configStore'
 import { PROVIDERS } from '../utils/constants'
 import { validateConfig, formatValidationErrors } from '../utils/validation'
+import { Icon } from './Icon'
 
 interface AddProfileTileProps {
   onAdd?: () => void
@@ -65,8 +66,10 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
   if (!isAdding) {
     return (
       <button className="add-profile-tile" onClick={() => setIsAdding(true)}>
-        <span className="add-icon">+</span>
-        <span className="add-text">添加新配置</span>
+        <span className="add-icon"><Icon name="plus" size={24} strokeWidth={1.6} /></span>
+        <span className="add-kicker">NEW CONNECTION</span>
+        <span className="add-text">接入一个模型</span>
+        <span className="add-description">添加端点、模型与访问密钥</span>
       </button>
     )
   }
@@ -75,9 +78,11 @@ function AddProfileTile({ onAdd }: AddProfileTileProps) {
     <div className="profile-card">
       <div className="card-header">
         <div>
+          <span className="section-kicker">NEW CONNECTION</span>
           <h3 className="card-name">新建 API 配置</h3>
           <p className="card-description">配置你的模型端点</p>
         </div>
+        <span className="add-form-icon"><Icon name="plus" size={19} /></span>
       </div>
 
       <div className="card-form">

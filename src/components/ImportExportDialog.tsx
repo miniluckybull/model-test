@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useConfigStore } from '../store/configStore'
+import { Icon } from './Icon'
 
 interface ImportExportDialogProps {
   onClose: () => void
@@ -85,7 +86,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
       <div className="dialog-content dialog-large" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <h2>导入 / 导出配置</h2>
-          <button className="dialog-close" onClick={onClose}>✕</button>
+          <button className="dialog-close" onClick={onClose} aria-label="关闭导入导出对话框"><Icon name="x" size={16} /></button>
         </div>
 
         <div className="dialog-body">
@@ -178,7 +179,7 @@ export default function ImportExportDialog({ onClose }: ImportExportDialogProps)
 
             {importSuccess && (
               <div className="success-message">
-                ✓ 导入成功！
+                <Icon name="check" size={14} /> 导入成功！
               </div>
             )}
 

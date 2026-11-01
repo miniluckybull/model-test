@@ -46,8 +46,14 @@ export function StatisticsPanel() {
   }
 
   return (
-    <div className="statistics-panel">
-      <h3>统计</h3>
+    <section className="statistics-panel">
+      <div className="statistics-header">
+        <div>
+          <span className="section-kicker">TELEMETRY</span>
+          <h3>运行统计</h3>
+        </div>
+        <span>基于各端点最近一次检测</span>
+      </div>
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -103,6 +109,6 @@ export function StatisticsPanel() {
           </div>
         </div>
       )}
-    </div>
+    </section>
   )
 }

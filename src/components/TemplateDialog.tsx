@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useConfigStore } from '../store/configStore'
 import { CONFIG_TEMPLATES } from '../utils/templates'
+import { Icon } from './Icon'
 
 interface TemplateDialogProps {
   onClose: () => void
@@ -41,7 +42,7 @@ export default function TemplateDialog({ onClose }: TemplateDialogProps) {
       <div className="dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="dialog-header">
           <h2>从模板添加</h2>
-          <button className="dialog-close" onClick={onClose}>✕</button>
+          <button className="dialog-close" onClick={onClose} aria-label="关闭模板对话框"><Icon name="x" size={16} /></button>
         </div>
 
         <div className="dialog-body">

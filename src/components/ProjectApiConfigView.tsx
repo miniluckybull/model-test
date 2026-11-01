@@ -15,6 +15,7 @@ import {
   scanClaudeTarget,
 } from '../services/tauriCommands'
 import { open } from '@tauri-apps/plugin-dialog'
+import { Icon } from './Icon'
 import {
   THINKING_MODES,
   THINKING_MODE_LABELS,
@@ -334,7 +335,14 @@ function ProjectApiConfigView() {
     <div className="project-api-view">
       {/* 左栏：应用目标 */}
       <aside className="pav-left">
-        <div className="pav-left-header">应用目标</div>
+        <div className="pav-left-header">
+          <div>
+            <span className="step-number">01</span>
+            <span>选择目标</span>
+          </div>
+          <span className="pav-count">{targets.length}</span>
+        </div>
+        <p className="pav-left-caption">TARGET WORKSPACES</p>
         <div className="pav-target-list">
           {loadingTargets ? (
             <div className="cascade-loading">读取中…</div>
@@ -353,9 +361,14 @@ function ProjectApiConfigView() {
                     autoSelectProfile(t)
                   }}
                 >
-                  <span className="pav-target-label">{t.label}</span>
-                  <span className={`pav-target-sub ${t.info.model ? '' : 'muted'}`}>{t.sub}</span>
-                  {t.info.model && <span className="pav-target-check">✓</span>}
+                  <span className="pav-target-icon">
+                    <Icon name={t.path ? 'folder' : 'globe'} size={16} />
+                  </span>
+                  <span className="pav-target-copy">
+                    <span className="pav-target-label">{t.label}</span>
+                    <span className={`pav-target-sub ${t.info.model ? '' : 'muted'}`}>{t.sub}</span>
+                  </span>
+                  {t.info.model && <span className="pav-target-check"><Icon name="check" size={13} /></span>}
                 </button>
                 {t.path && (
                   <button
@@ -368,7 +381,7 @@ function ProjectApiConfigView() {
                       handleLaunchClaude(t.path!)
                     }}
                   >
-                    {launchingPath === t.path ? '…' : '▶'}
+                    {launchingPath === t.path ? <span className="mini-loader" /> : <Icon name="terminal" size={14} />}
                   </button>
                 )}
                 {t.path &&
@@ -397,7 +410,7 @@ function ProjectApiConfigView() {
                         setConfirmRemovePath(t.path!)
                       }}
                     >
-                      ✕
+                      <Icon name="x" size={13} />
                     </button>
                   ))}
               </div>
@@ -406,7 +419,8 @@ function ProjectApiConfigView() {
         </div>
         <div className="pav-left-actions">
           <button className="btn btn-secondary pav-action-btn" onClick={() => setShowRegisterForm((v) => !v)}>
-            ＋ 登记新项目…
+            <Icon name="folder-plus" size={16} />
+            登记新项目
           </button>
         </div>
 
@@ -454,17 +468,18 @@ function ProjectApiConfigView() {
       {/* 右栏：配置工作区 */}
       <section className="pav-right">
         <div className="pav-right-header">
-          <span className="pav-right-title">
-            应用至：{activeTargetRow?.label ?? '—'}
-          </span>
-          {activeInfo?.full_path && (
-            <span className="pav-source-badge">
-              当前 {activeInfo.source_file}
-            </span>
-          )}
-          {activeInfo?.model && (
-            <span className="pav-right-current">生效模型：{activeInfo.model}</span>
-          )}
+          <div className="pav-right-heading">
+            <span className="section-kicker">02 / SELECT PROFILE</span>
+            <h2 className="pav-right-title">{activeTargetRow?.label ?? '选择应用目标'}</h2>
+          </div>
+          <div className="pav-target-meta">
+            {activeInfo?.full_path && (
+              <span className="pav-source-badge">{activeInfo.source_file}</span>
+            )}
+            {activeInfo?.model && (
+              <span className="pav-right-current"><span />{activeInfo.model}</span>
+            )}
+          </div>
         </div>
 
         {configs.length === 0 ? (
@@ -473,25 +488,35 @@ function ProjectApiConfigView() {
           </div>
         ) : (
           <>
-            <div className="pav-profile-grid">
+            <section className="pav-profile-section">
+              <div className="pav-section-label">
+                <span>可用配置档案</span>
+                <span>{configs.length} PROFILES</span>
+              </div>
+              <div className="pav-profile-grid">
               {configs.map((c) => (
                 <button
                   key={c.id}
                   className={`pav-profile ${selectedProfileId === c.id ? 'selected' : ''}`}
+                  title={`${c.name} · ${c.model}`}
                   disabled={applying}
                   onClick={() => setSelectedProfileId(selectedProfileId === c.id ? null : c.id)}
                 >
-                  <span className="pav-profile-name">{c.name}</span>
-                  <span className="pav-profile-model">{c.model}</span>
+                  <span className="pav-profile-radio">{selectedProfileId === c.id && <span />}</span>
+                  <span className="pav-profile-copy">
+                    <span className="pav-profile-model">{c.model}</span>
+                    <span className="pav-profile-name">{c.name}</span>
+                  </span>
                   {c.tiers?.haiku && (
                     <span className="cascade-tier-dot" title={`haiku 档：${c.tiers.haiku}`}>
                       分级
                     </span>
                   )}
-                  {activeInfo?.model === c.model && <span className="pav-target-check">✓</span>}
+                  {activeInfo?.model === c.model && <span className="pav-target-check"><Icon name="check" size={13} /></span>}
                 </button>
-              ))}
-            </div>
+                ))}
+              </div>
+            </section>
 
             {selectedProfile && (
               <ProfileDetailPanel
@@ -583,16 +608,24 @@ function ProfileDetailPanel({
   onTierCustomMode,
   onApply,
 }: ProfileDetailPanelProps) {
-  const [showPreview, setShowPreview] = useState(true)
+  const [showPreview, setShowPreview] = useState(false)
   const modeIdx = Math.max(0, THINKING_MODES.indexOf(thinkingMode))
   const effortIdx = Math.max(0, THINKING_EFFORTS.indexOf(thinkingEffort))
 
   return (
     <div className="pav-detail">
       <div className="pav-detail-header">
-        <span className="pav-detail-title">详细配置：{profile.name}</span>
+        <div>
+          <span className="section-kicker">03 / TUNE & APPLY</span>
+          <div className="pav-detail-title-line">
+            <h3 className="pav-detail-title">{profile.name}</h3>
+            {profile.model.toLowerCase() !== profile.name.toLowerCase() && (
+              <span className="pav-detail-model">{profile.model}</span>
+            )}
+          </div>
+        </div>
         <span className="field-hint">
-          {profile.endpoint || '默认端点'} · 应用时自动保存到该配置档
+          {profile.endpoint || '默认端点'} · 应用时自动保存
         </span>
       </div>
 
@@ -681,36 +714,38 @@ function ProfileDetailPanel({
           return (
             <div className="tier-row" key={tier}>
               <span className={`tier-name tier-${tier}`}>{tier}</span>
-              <select
-                className="field-select"
-                value={isCustom ? '__custom' : value}
-                onChange={(e) => {
-                  const next = e.target.value
-                  if (next === '__custom') {
-                    onTierCustomMode((m) => ({ ...m, [tier]: true }))
-                  } else {
-                    onTierCustomMode((m) => ({ ...m, [tier]: false }))
-                    onTiers((t) => ({ ...t, [tier]: next === '' ? undefined : next }))
-                  }
-                }}
-              >
-                <option value="">不设置（回退主模型）</option>
-                {modelOptions.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                    {m === profile.model ? '（本档主模型）' : ''}
-                  </option>
-                ))}
-                <option value="__custom">自定义模型名…</option>
-              </select>
-              {isCustom && (
-                <input
-                  className="field-input tier-custom-input"
-                  placeholder="输入模型名"
-                  value={tiers[tier] ?? ''}
-                  onChange={(e) => onTiers((t) => ({ ...t, [tier]: e.target.value }))}
-                />
-              )}
+              <div className="tier-control">
+                <select
+                  className="field-select"
+                  value={isCustom ? '__custom' : value}
+                  onChange={(e) => {
+                    const next = e.target.value
+                    if (next === '__custom') {
+                      onTierCustomMode((m) => ({ ...m, [tier]: true }))
+                    } else {
+                      onTierCustomMode((m) => ({ ...m, [tier]: false }))
+                      onTiers((t) => ({ ...t, [tier]: next === '' ? undefined : next }))
+                    }
+                  }}
+                >
+                  <option value="">不设置（回退主模型）</option>
+                  {modelOptions.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                      {m === profile.model ? '（本档主模型）' : ''}
+                    </option>
+                  ))}
+                  <option value="__custom">自定义模型名…</option>
+                </select>
+                {isCustom && (
+                  <input
+                    className="field-input tier-custom-input"
+                    placeholder="输入模型名"
+                    value={tiers[tier] ?? ''}
+                    onChange={(e) => onTiers((t) => ({ ...t, [tier]: e.target.value }))}
+                  />
+                )}
+              </div>
               <span className="tier-hint">{TIER_HINTS[tier]}</span>
             </div>
           )
@@ -722,7 +757,8 @@ function ProfileDetailPanel({
           className="pav-preview-toggle"
           onClick={() => setShowPreview((v) => !v)}
         >
-          {showPreview ? '▾' : '▸'} 配置 JSON 预览
+          <Icon name="chevron-down" size={14} className={showPreview ? 'rotated' : ''} />
+          配置 JSON 预览
           {previewLoading && <span className="pav-preview-loading">更新中…</span>}
         </button>
         {showPreview && preview && (
@@ -754,7 +790,8 @@ function ProfileDetailPanel({
 
       <div className="pav-apply-row">
         <button className="btn btn-primary pav-apply-btn" disabled={applying} onClick={onApply}>
-          {applying ? '应用中…' : `确认应用「${profile.name}」至「${targetLabel}」`}
+          <span>{applying ? '正在应用配置…' : `应用「${profile.name}」至「${targetLabel}」`}</span>
+          {!applying && <Icon name="arrow-right" size={17} />}
         </button>
       </div>
     </div>
