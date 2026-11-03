@@ -158,8 +158,20 @@ fn get_all_claude_config_paths() -> Vec<PathBuf> {
     paths
 }
 
-/// Find the first existing config file
+fn is_managed_config_path(path: &std::path::Path) -> bool {
+    path.file_name()
+        .map(|name| name == "managed-settings.json")
+        .unwrap_or(false)
+}
+
+/// Find the first existing user-writable config file.
 fn find_existing_config_path() -> Option<PathBuf> {
+    get_all_claude_config_paths()
+        .into_iter()
+        .find(|p| p.exists() && !is_managed_config_path(p))
+}
+
+fn find_readable_config_path() -> Option<PathBuf> {
     get_all_claude_config_paths()
         .into_iter()
         .find(|p| p.exists())
@@ -181,8 +193,22 @@ fn get_claude_config_path(custom_path: Option<&str>) -> Result<PathBuf, String> 
     Ok(home.join(".claude").join("settings.json"))
 }
 
+fn get_claude_config_read_path(custom_path: Option<&str>) -> Result<PathBuf, String> {
+    if let Some(path) = custom_path {
+        if !path.is_empty() {
+            return Ok(PathBuf::from(path));
+        }
+    }
+
+    if let Some(existing) = find_readable_config_path() {
+        return Ok(existing);
+    }
+
+    get_claude_config_path(None)
+}
+
 fn read_claude_config(custom_path: Option<&str>) -> Result<ClaudeConfig, String> {
-    let path = get_claude_config_path(custom_path)?;
+    let path = get_claude_config_read_path(custom_path)?;
     
     if !path.exists() {
         return Ok(ClaudeConfig {
@@ -514,7 +540,10 @@ mod tests {
         let result = export_to_project(make_request("sk-test-123"), project.to_string_lossy().to_string()).unwrap();
 
         assert!(result.used_local_settings);
-        assert!(result.config_path.ends_with(".claude/settings.local.json"));
+        assert_eq!(
+            PathBuf::from(&result.config_path),
+            project.join(".claude").join("settings.local.json")
+        );
 
         let content: serde_json::Value =
             serde_json::from_str(&fs::read_to_string(&result.config_path).unwrap()).unwrap();
@@ -557,7 +586,10 @@ mod tests {
         let result = export_to_project(make_request(""), project.to_string_lossy().to_string()).unwrap();
 
         assert!(!result.used_local_settings);
-        assert!(result.config_path.ends_with(".claude/settings.json"));
+        assert_eq!(
+            PathBuf::from(&result.config_path),
+            project.join(".claude").join("settings.json")
+        );
         assert!(!project.join(".claude/.gitignore").exists());
 
         fs::remove_dir_all(&project).unwrap();

@@ -183,7 +183,7 @@ function App() {
           )}
           <div className="sidebar-version">
             <span>OPEN SOURCE</span>
-            <span>v0.2.0</span>
+            <span>v0.3.0</span>
           </div>
         </div>
       </aside>

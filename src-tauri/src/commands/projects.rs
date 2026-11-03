@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -258,16 +258,22 @@ pub fn init_git_repo(path: String) -> Result<bool, String> {
     Ok(true)
 }
 
-/// Open a Terminal.app window at the given directory (macOS), optionally starting Claude Code.
+/// Open a new terminal at the given directory, optionally starting Claude Code.
 #[tauri::command]
 pub fn open_terminal_at(path: String, launch_claude: Option<bool>) -> Result<(), String> {
     let dir = PathBuf::from(&path);
     if !dir.is_dir() {
         return Err(format!("路径不是目录: {}", path));
     }
+    open_terminal_impl(&dir, launch_claude.unwrap_or(false))
+}
+
+#[cfg(target_os = "macos")]
+fn open_terminal_impl(dir: &Path, launch_claude: bool) -> Result<(), String> {
+    let path = dir.to_string_lossy();
     let shell_path = path.replace('\'', "'\\''");
     let mut command = format!("cd '{}'", shell_path);
-    if launch_claude.unwrap_or(false) {
+    if launch_claude {
         command.push_str(" && claude");
     }
     let escaped = command.replace('\\', "\\\\").replace('"', "\\\"");
@@ -287,6 +293,30 @@ pub fn open_terminal_at(path: String, launch_claude: Option<bool>) -> Result<(),
         ));
     }
     Ok(())
+}
+
+#[cfg(target_os = "windows")]
+fn open_terminal_impl(dir: &Path, launch_claude: bool) -> Result<(), String> {
+    let mut command = std::process::Command::new("cmd.exe");
+    command.args(["/C", "start", "", "/D"]).arg(dir).arg("cmd.exe");
+    if launch_claude {
+        command.args(["/K", "claude"]);
+    }
+    let output = command
+        .output()
+        .map_err(|e| format!("调用 Windows 命令行失败: {}", e))?;
+    if !output.status.success() {
+        return Err(format!(
+            "打开 Windows 命令行失败: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    Ok(())
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
+fn open_terminal_impl(_dir: &Path, _launch_claude: bool) -> Result<(), String> {
+    Err("当前平台暂不支持打开终端".to_string())
 }
 
 /// Read the effective Claude Code config of a target.

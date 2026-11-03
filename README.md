@@ -2,7 +2,7 @@
 
 本地开发模型资源检测工具：管理多套 LLM API 配置、测试连通性与延迟/Token，并可一键把配置应用到 Claude Code。全中文界面。
 
-![version](https://img.shields.io/badge/version-0.2.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![platform](https://img.shields.io/badge/platform-macOS-lightgrey)
+![version](https://img.shields.io/badge/version-0.3.0-blue) ![license](https://img.shields.io/badge/license-MIT-green) ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)
 
 ## 功能特性
 
@@ -22,7 +22,7 @@
 从 [GitHub Releases](../../releases) 下载 `Model Tester_<版本>_aarch64.dmg`（Apple Silicon），或让维护者发你 dmg。终端执行：
 
 ```bash
-hdiutil attach "Model Tester_0.2.0_aarch64.dmg"
+hdiutil attach "Model Tester_0.3.0_aarch64.dmg"
 cp -R "/Volumes/Model Tester/Model Tester.app" /Applications/
 hdiutil detach "/Volumes/Model Tester"
 xattr -dr com.apple.quarantine "/Applications/Model Tester.app"   # 未公证，必须去隔离
@@ -30,6 +30,9 @@ open "/Applications/Model Tester.app"
 ```
 
 > 未做 Apple 公证，务必执行 `xattr` 一步，或首次右键→打开。当前包为 aarch64（M 系列芯片）。
+
+### Windows 安装
+从 GitHub Releases 下载 Windows x64 安装包并按提示安装。应用依赖 WebView2 Runtime（Windows 10/11 通常已内置）；“打开终端启动 Claude Code”要求 `claude` 已加入 `PATH`。
 
 ### 方式 B：从源码构建
 前置：Node.js 18.18+、Rust 1.77+。
@@ -60,6 +63,7 @@ npm run tauri:build     # 产物在 src-tauri/target/release/bundle/
 ## 配置存储位置
 
 - macOS: `~/Library/Application Support/com.local.model-test/configs.json`
+- Windows: `%APPDATA%\\com.local.model-test\\configs.json`
 - Linux: `~/.config/com.local.model-test/configs.json`
 
 ## 发布
