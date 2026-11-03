@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build ${{ matrix.os }}
@@ -15,7 +18,7 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            target: universal-apple-darwin
+            target: aarch64-apple-darwin
           - os: windows-latest
             target: x86_64-pc-windows-msvc
           - os: ubuntu-22.04
