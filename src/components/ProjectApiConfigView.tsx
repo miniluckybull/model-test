@@ -15,6 +15,7 @@ import {
   scanClaudeTarget,
 } from '../services/tauriCommands'
 import { open } from '@tauri-apps/plugin-dialog'
+import { CONNECTION_STATUS_META } from '../utils/connectionStatus'
 import { Icon } from './Icon'
 import {
   THINKING_MODES,
@@ -497,7 +498,7 @@ function ProjectApiConfigView() {
               {configs.map((c) => (
                 <button
                   key={c.id}
-                  className={`pav-profile ${selectedProfileId === c.id ? 'selected' : ''}`}
+                  className={`pav-profile status-${c.status} ${selectedProfileId === c.id ? 'selected' : ''}`}
                   title={`${c.name} · ${c.model}`}
                   disabled={applying}
                   onClick={() => setSelectedProfileId(selectedProfileId === c.id ? null : c.id)}
@@ -506,6 +507,14 @@ function ProjectApiConfigView() {
                   <span className="pav-profile-copy">
                     <span className="pav-profile-model">{c.model}</span>
                     <span className="pav-profile-name">{c.name}</span>
+                  </span>
+                  <span
+                    className={`pav-profile-status ${c.status}`}
+                    role="img"
+                    aria-label={CONNECTION_STATUS_META[c.status].label}
+                    title={CONNECTION_STATUS_META[c.status].label}
+                  >
+                    <Icon name={CONNECTION_STATUS_META[c.status].icon} size={12} strokeWidth={2.2} />
                   </span>
                   {c.tiers?.haiku && (
                     <span className="cascade-tier-dot" title={`haiku 档：${c.tiers.haiku}`}>

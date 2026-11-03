@@ -4,27 +4,15 @@ import { ApiConfig, TestResult } from '../types'
 import { useConfigStore } from '../store/configStore'
 import { testModel } from '../services/tauriCommands'
 import { PROVIDERS } from '../utils/constants'
-import { Icon, type IconName } from './Icon'
+import { CONNECTION_STATUS_META } from '../utils/connectionStatus'
+import { Icon } from './Icon'
 
 interface ProfileCardProps {
   config: ApiConfig
+  compactMode?: boolean
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  idle: '待检测',
-  running: '检测中',
-  ok: '连接正常',
-  failed: '连接失败',
-}
-
-const STATUS_ICONS: Record<ApiConfig['status'], IconName> = {
-  idle: 'clock',
-  running: 'activity',
-  ok: 'check',
-  failed: 'x',
-}
-
-function ProfileCard({ config }: ProfileCardProps) {
+function ProfileCard({ config, compactMode = false }: ProfileCardProps) {
   const updateConfig = useConfigStore((state) => state.updateConfig)
   const deleteConfig = useConfigStore((state) => state.deleteConfig)
   const duplicateConfig = useConfigStore((state) => state.duplicateConfig)
@@ -49,29 +37,24 @@ function ProfileCard({ config }: ProfileCardProps) {
     const setupListener = async () => {
       unlisten = await listen('test-complete', (event: any) => {
         const payload = event.payload
-        if (payload.config_id === config.id) {
-          const result: TestResult = {
-            configId: payload.config_id,
-            success: payload.success,
-            latencyMs: payload.latency_ms,
-            promptTokens: payload.prompt_tokens,
-            completionTokens: payload.completion_tokens,
-            totalTokens: payload.total_tokens,
-            errorMessage: payload.error_message,
-            modelResponse: payload.model_response,
-            actualModel: payload.actual_model,
-          }
-          setLastResult(result)
-          updateTestResult(config.id, result)
-          setConfigStatus(config.id, result.success ? 'ok' : 'failed')
-        }
+        if (payload.config_id !== config.id) return
+        setLastResult({
+          configId: payload.config_id,
+          success: payload.success,
+          latencyMs: payload.latency_ms,
+          promptTokens: payload.prompt_tokens,
+          completionTokens: payload.completion_tokens,
+          totalTokens: payload.total_tokens,
+          errorMessage: payload.error_message,
+          modelResponse: payload.model_response,
+          actualModel: payload.actual_model,
+        })
       })
     }
 
     setupListener().catch((error) => console.error('Failed to listen for test result:', error))
-
     return () => unlisten?.()
-  }, [config.id, updateTestResult, setConfigStatus])
+  }, [config.id])
 
   const handleTest = async () => {
     setConfigStatus(config.id, 'running')
@@ -132,6 +115,7 @@ function ProfileCard({ config }: ProfileCardProps) {
   }
 
   const providerName = PROVIDERS[config.provider]?.name || '自定义'
+  const statusMeta = CONNECTION_STATUS_META[config.status]
   const lastTestedTime = config.lastTestedAt
     ? new Date(config.lastTestedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : '从未'
@@ -140,7 +124,7 @@ function ProfileCard({ config }: ProfileCardProps) {
   const hasTestStats = hasLastLatency || hasLastTokens || Boolean(config.lastTestedAt)
 
   return (
-    <article className={`profile-card status-${config.status}`}>
+    <article className={`profile-card status-${config.status} ${compactMode && !isEditing ? 'is-compact' : ''}`}>
       {!isEditing ? (
         <>
           <div className="card-heading-row">
@@ -148,13 +132,15 @@ function ProfileCard({ config }: ProfileCardProps) {
               <h3 className="card-model-id" title={config.model}>{config.model}</h3>
               <p className="card-config-name" title={config.name}>{config.name}</p>
             </div>
-            <span className={`connection-status ${config.status}`}>
-              <Icon name={STATUS_ICONS[config.status]} size={13} strokeWidth={2.2} />
-              <span>{STATUS_LABELS[config.status] ?? config.status}</span>
-            </span>
+            {!compactMode && (
+              <span className={`connection-status ${config.status}`}>
+                <Icon name={statusMeta.icon} size={13} strokeWidth={2.2} />
+                <span>{statusMeta.label}</span>
+              </span>
+            )}
           </div>
 
-          {hasTestStats ? (
+          {!compactMode && (hasTestStats ? (
             <div className="test-summary-strip">
               <div className="test-primary-metric">
                 <span className="stat-label">响应延迟</span>
@@ -177,9 +163,9 @@ function ProfileCard({ config }: ProfileCardProps) {
               <span>尚未运行连接测试</span>
               <span>READY</span>
             </div>
-          )}
+          ))}
 
-          {lastResult && (
+          {!compactMode && lastResult && (
             <div className={`result-panel-compact ${resultExpanded ? 'expanded' : ''}`}>
               <button
                 className="result-toggle"

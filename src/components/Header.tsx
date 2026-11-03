@@ -8,9 +8,11 @@ import type { AppTab } from '../App'
 
 interface HeaderProps {
   activeTab: AppTab
+  compactMode: boolean
+  onToggleCompactMode: () => void
 }
 
-function Header({ activeTab }: HeaderProps) {
+function Header({ activeTab, compactMode, onToggleCompactMode }: HeaderProps) {
   const configs = useConfigStore((state) => state.configs)
   const setConfigStatus = useConfigStore((state) => state.setConfigStatus)
   const [isTestingAll, setIsTestingAll] = useState(false)
@@ -55,6 +57,17 @@ function Header({ activeTab }: HeaderProps) {
             <Icon name="import-export" size={16} />
             <span>导入 / 导出</span>
           </button>
+          {isModelTab && (
+            <button
+              className={`header-button compact-mode-toggle ${compactMode ? 'active' : ''}`}
+              onClick={onToggleCompactMode}
+              aria-pressed={compactMode}
+              title={compactMode ? '切换回标准模式' : '切换到简洁模式'}
+            >
+              <Icon name={compactMode ? 'grid' : 'list'} size={16} />
+              <span>{compactMode ? '标准模式' : '简洁模式'}</span>
+            </button>
+          )}
           {isModelTab && (
             <button className="header-test-all" onClick={handleTestAll} disabled={!canTestAll}>
               <Icon name="activity" size={17} className={isTestingAll ? 'is-spinning' : ''} />

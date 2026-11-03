@@ -6,30 +6,62 @@ import ControlsGrid from './components/ControlsGrid'
 import { StatisticsPanel } from './components/StatisticsPanel'
 import ProjectApiConfigView from './components/ProjectApiConfigView'
 import { BrandMark, Icon } from './components/Icon'
+import type { TestResult } from './types'
 
 export type AppTab = 'test' | 'projectApi'
+
+const GITHUB_REPO_URL = 'https://github.com/miniluckybull/model-test'
 
 function App() {
   const loadConfigs = useConfigStore((state) => state.loadConfigs)
   const configs = useConfigStore((state) => state.configs)
+  const updateTestResult = useConfigStore((state) => state.updateTestResult)
 
   const [activeTab, setActiveTab] = useState<AppTab>('test')
   const [showStats, setShowStats] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [compactMode, setCompactMode] = useState(false)
+  const [repoCopyStatus, setRepoCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle')
 
   useEffect(() => {
     loadConfigs()
 
-    let unlisten: (() => void) | undefined
+    let disposed = false
+    let unlisteners: Array<() => void> = []
     const setupListeners = async () => {
-      unlisten = await listen('auto-test-complete', () => {
-        loadConfigs()
-      })
+      const listeners = await Promise.all([
+        listen('test-complete', (event: any) => {
+          const payload = event.payload
+          const result: TestResult = {
+            configId: payload.config_id,
+            success: payload.success,
+            latencyMs: payload.latency_ms,
+            promptTokens: payload.prompt_tokens,
+            completionTokens: payload.completion_tokens,
+            totalTokens: payload.total_tokens,
+            errorMessage: payload.error_message,
+            modelResponse: payload.model_response,
+            actualModel: payload.actual_model,
+          }
+          updateTestResult(payload.config_id, result)
+        }),
+        listen('auto-test-complete', () => {
+          loadConfigs()
+        }),
+      ])
+      if (disposed) {
+        listeners.forEach((unlisten) => unlisten())
+      } else {
+        unlisteners = listeners
+      }
     }
     setupListeners().catch((error) => console.error('Failed to listen for test events:', error))
 
-    return () => unlisten?.()
-  }, [loadConfigs])
+    return () => {
+      disposed = true
+      unlisteners.forEach((unlisten) => unlisten())
+    }
+  }, [loadConfigs, updateTestResult])
 
   const overview = useMemo(() => {
     const latencies = configs.flatMap((config) =>
@@ -43,6 +75,25 @@ function App() {
         : null,
     }
   }, [configs])
+
+  const handleCopyRepoUrl = async () => {
+    try {
+      if (!navigator.clipboard) throw new Error('Clipboard API unavailable')
+      await navigator.clipboard.writeText(GITHUB_REPO_URL)
+      setRepoCopyStatus('copied')
+    } catch {
+      const textarea = document.createElement('textarea')
+      textarea.value = GITHUB_REPO_URL
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+      document.body.appendChild(textarea)
+      textarea.select()
+      const copied = document.execCommand('copy')
+      textarea.remove()
+      setRepoCopyStatus(copied ? 'copied' : 'error')
+    }
+    window.setTimeout(() => setRepoCopyStatus('idle'), 2200)
+  }
 
   return (
     <div className={`app ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -99,27 +150,50 @@ function App() {
           </button>
         </nav>
 
-        <div className="sidebar-note">
-          <span className="sidebar-note-icon"><Icon name="spark" size={17} /></span>
-          <p>一个工作台，管理所有模型入口。</p>
-        </div>
-
         <div className="sidebar-footer">
-          <div className="local-status">
-            <span className="local-status-dot" />
-            <span>本地工作区</span>
-            <Icon name="shield" size={15} />
+          <div className="share-actions">
+            <a
+              className="share-github"
+              href={GITHUB_REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              title="打开 GitHub 开源仓库"
+              aria-label="打开 GitHub 开源仓库"
+            >
+              <Icon name="github" size={18} />
+              <span className="share-copy">
+                <strong>GitHub 开源</strong>
+                <small>miniluckybull / model-test</small>
+              </span>
+              <Icon name="external-link" size={13} className="share-external" />
+            </a>
+            <button
+              className="share-copy-button"
+              onClick={handleCopyRepoUrl}
+              title="复制 GitHub 分享链接"
+              aria-label="复制 GitHub 分享链接"
+            >
+              <Icon name={repoCopyStatus === 'copied' ? 'check' : 'copy'} size={15} />
+            </button>
           </div>
-          <p>配置与密钥仅保存在此设备</p>
+          {repoCopyStatus !== 'idle' && (
+            <span className={`share-feedback ${repoCopyStatus}`} role="status">
+              {repoCopyStatus === 'copied' ? '链接已复制，可分享给他人' : '复制失败，请打开仓库复制地址'}
+            </span>
+          )}
           <div className="sidebar-version">
-            <span>CONTROL DESK</span>
+            <span>OPEN SOURCE</span>
             <span>v0.2.0</span>
           </div>
         </div>
       </aside>
 
       <div className="app-workspace">
-        <Header activeTab={activeTab} />
+        <Header
+          activeTab={activeTab}
+          compactMode={compactMode}
+          onToggleCompactMode={() => setCompactMode((compact) => !compact)}
+        />
         <main className={activeTab === 'projectApi' ? 'main-full' : 'main-models'}>
           {activeTab === 'test' ? (
             <>
@@ -159,7 +233,7 @@ function App() {
                 </div>
                 <p><span className="section-heading-dot" />选择任意端点，运行一次连接测试</p>
               </div>
-              <ControlsGrid configs={configs} />
+              <ControlsGrid configs={configs} compactMode={compactMode} />
             </>
           ) : (
             <ProjectApiConfigView />
